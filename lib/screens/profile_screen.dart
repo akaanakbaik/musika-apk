@@ -66,16 +66,7 @@ class ProfileScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            // Stats row
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _StatItem(label: 'Favorites', value: '${auth.user?.stats?.favorites ?? 0}'),
-                _StatItem(label: 'Playlists', value: '${auth.user?.stats?.playlists ?? 0}'),
-                _StatItem(label: 'Downloads', value: '${auth.user?.stats?.downloads ?? 0}'),
-              ],
-            ),
-            const SizedBox(height: 16),
+
             _MenuItem(icon: Icons.edit_outlined, title: 'Edit Profile', onTap: () => _showEditProfile(context, auth)),
             _MenuItem(icon: Icons.download_outlined, title: 'My Downloads', onTap: () {}),
             const Divider(),
@@ -353,23 +344,6 @@ class _SectionHeader extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Text(title, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.grey[400])),
-    );
-  }
-}
-
-class _StatItem extends StatelessWidget {
-  final String label;
-  final String value;
-  const _StatItem({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.primary)),
-        const SizedBox(height: 2),
-        Text(label, style: TextStyle(fontSize: 11, color: Colors.grey[500])),
-      ],
     );
   }
 }

@@ -65,8 +65,6 @@ class _DownloadsScreenState extends State<DownloadsScreen> {
       list.sort((a, b) => a.title.compareTo(b.title));
     } else if (_sortBy == 'artist') {
       list.sort((a, b) => a.artist.compareTo(b.artist));
-    } else {
-      list.sort((a, b) => b.downloadedAt.compareTo(a.downloadedAt));
     }
     if (!_isSearching) _downloads = list;
     else _filtered = list;
@@ -273,13 +271,6 @@ class _DownloadsScreenState extends State<DownloadsScreen> {
           onTap: _selectionMode
               ? () => _toggleSelection(song.videoId)
               : () => player.playSong(song, queue: _downloads),
-          leading: _selectionMode
-              ? Checkbox(
-                  value: _selectedIds.contains(song.videoId),
-                  onChanged: (_) => _toggleSelection(song.videoId),
-                  activeColor: AppTheme.primary,
-                )
-              : null,
           trailing: _selectionMode
               ? null
               : PopupMenuButton<String>(

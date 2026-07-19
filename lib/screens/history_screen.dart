@@ -60,10 +60,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         : _timeFilter == 'week'
             ? now.subtract(const Duration(days: 7))
             : now.subtract(const Duration(days: 30));
-    _filtered = _history.where((s) {
-      final playedAt = s.playedAt ?? s.addedAt ?? DateTime(2000);
-      return playedAt.isAfter(cutoff);
-    }).toList();
+    _filtered = _history.where((s) => true).toList();
   }
 
   void _setTimeFilter(String filter) {
@@ -86,13 +83,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       ),
     );
     if (confirm == true) {
-      if (_timeFilter == 'all') {
-        await _service.clearHistory();
-      } else {
-        for (final s in _filtered) {
-          await _service.deleteHistoryItem(s.videoId);
-        }
-      }
+      await _service.clearHistory();
       _load();
     }
   }
