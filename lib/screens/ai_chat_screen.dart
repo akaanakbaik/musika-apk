@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:async' show Future;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/ai_service.dart';
