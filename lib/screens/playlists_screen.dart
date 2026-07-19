@@ -30,8 +30,8 @@ class _PlaylistsScreenState extends State<PlaylistsScreen> {
     setState(() => _loading = true);
     try {
       final res = await _service.getPlaylists();
-      if (res['success'] == true && res['playlists'] != null) {
-        final items = res['playlists'] as List<dynamic>;
+      if (res['success'] == true && res['data'] != null) {
+        final items = res['data'] as List<dynamic>;
         _playlists = items.map((e) => Playlist.fromJson(e as Map<String, dynamic>)).toList();
       }
     } catch (_) {}

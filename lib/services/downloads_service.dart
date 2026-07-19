@@ -25,8 +25,8 @@ class DownloadsService {
 
   Future<List<Song>> getDownloadedSongs() async {
     final res = await getDownloads();
-    if (res['success'] == true && res['downloads'] != null) {
-      final items = res['downloads'] as List<dynamic>;
+    if (res['success'] == true && res['data'] != null) {
+      final items = res['data'] as List<dynamic>;
       return items.map((e) => Song.fromJson(e as Map<String, dynamic>)).toList();
     }
     return [];

@@ -38,8 +38,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
     });
     try {
       final res = await _service.getHistory();
-      if (res['success'] == true && res['history'] != null) {
-        final items = res['history'] as List<dynamic>;
+      if (res['success'] == true && res['data'] != null) {
+        final items = res['data'] as List<dynamic>;
         _history = items.map((e) => Song.fromJson(e as Map<String, dynamic>)).toList();
         _applyFilter();
       }

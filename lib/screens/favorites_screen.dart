@@ -71,8 +71,8 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     });
     try {
       final res = await _service.getFavorites();
-      if (res['success'] == true && res['favorites'] != null) {
-        final items = res['favorites'] as List<dynamic>;
+      if (res['success'] == true && res['data'] != null) {
+        final items = res['data'] as List<dynamic>;
         _favorites = items.map((e) => Song.fromJson(e as Map<String, dynamic>)).toList();
         _filtered = List.from(_favorites);
         _applySort();
