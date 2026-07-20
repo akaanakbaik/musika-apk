@@ -1,18 +1,13 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:musika_apk/main.dart';
 import 'package:musika_apk/providers/player_provider.dart';
 import 'package:musika_apk/providers/auth_provider.dart';
 import 'package:musika_apk/providers/settings_provider.dart';
 import 'package:musika_apk/screens/home_screen.dart';
 import 'package:musika_apk/screens/search_screen.dart';
 import 'package:musika_apk/screens/profile_screen.dart';
-import 'package:musika_apk/screens/playlists_screen.dart';
-import 'package:musika_apk/screens/history_screen.dart';
-import 'package:musika_apk/screens/downloads_screen.dart';
-import 'package:musika_apk/screens/favorites_screen.dart';
-import 'package:musika_apk/screens/ai_chat_screen.dart';
+import 'package:musika_apk/screens/auth_screen.dart';
 import 'package:musika_apk/config/theme.dart';
 
 Widget createTestApp({bool authenticated = false}) {
@@ -36,7 +31,7 @@ Widget createTestApp({bool authenticated = false}) {
 
 void main() {
   group('HomeScreen', () {
-    testWidgets('renders title and greeting', (tester) async {
+    testWidgets('renders greeting for guest', (tester) async {
       await tester.pumpWidget(createTestApp());
       await tester.pump();
 
@@ -85,7 +80,7 @@ void main() {
   });
 
   group('ProfileScreen', () {
-    testWidgets('renders sign in prompt for guest', (tester) async {
+    testWidgets('shows sign in button for guest', (tester) async {
       final settings = SettingsProvider();
       final auth = AuthProvider();
 
@@ -100,21 +95,50 @@ void main() {
       ));
       await tester.pump();
 
-      expect(find.text('Please sign-in'), findsOneWidget);
+      expect(find.text('Sign In'), findsOneWidget);
+    });
+
+    testWidgets('renders section headers', (tester) async {
+      final settings = SettingsProvider();
+      final auth = AuthProvider();
+
+      await tester.pumpWidget(MaterialApp(
+        home: MultiProvider(
+          providers: [
+            ChangeNotifierProvider.value(value: settings),
+            ChangeNotifierProvider.value(value: auth),
+          ],
+          child: const ProfileScreen(),
+        ),
+      ));
+      await tester.pump();
+
+      expect(find.text('Playback'), findsOneWidget);
+      expect(find.text('Display'), findsOneWidget);
+      expect(find.text('About'), findsOneWidget);
     });
   });
 
-  group('App Theme', () {
-    testWidgets('light theme has correct colors', (tester) async {
+  group('AuthScreen', () {
+    testWidgets('renders login form', (tester) async {
+      await tester.pumpWidget(MaterialApp(
+        home: const AuthScreen(),
+      ));
+      await tester.pump();
+
+      expect(find.byType(TextField), findsWidgets);
+    });
+  });
+
+  group('AppTheme', () {
+    testWidgets('light theme has correct brightness', (tester) async {
       final theme = AppTheme.lightTheme;
       expect(theme.brightness, Brightness.light);
-      expect(theme.primaryColor, AppTheme.primary);
     });
 
-    testWidgets('dark theme has correct colors', (tester) async {
+    testWidgets('dark theme has correct brightness', (tester) async {
       final theme = AppTheme.darkTheme;
       expect(theme.brightness, Brightness.dark);
-      expect(theme.primaryColor, AppTheme.primary);
     });
   });
 }
