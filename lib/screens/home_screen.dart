@@ -59,10 +59,6 @@ class _HomeScreenState extends State<HomeScreen> {
     if (mounted) setState(() => _loading = false);
   }
 
-  Future<void> _onRefresh() async {
-    await _loadRecommendations();
-  }
-
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
@@ -101,7 +97,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: _onRefresh,
+        onRefresh: _loadRecommendations,
         child: _loading
             ? const ShimmerList()
             : _error != null
