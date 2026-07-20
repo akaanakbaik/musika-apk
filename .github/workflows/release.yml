@@ -1,0 +1,112 @@
+name: Build & Release APK
+
+on:
+  push:
+    branches: [master]
+    paths-ignore:
+      - '**.md'
+      - '**.gitignore'
+  workflow_dispatch:
+    inputs:
+      version_bump:
+        description: 'Version bump type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+jobs:
+  build:
+    name: Build APK
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      apk_dir: ${{ steps.build.outputs.apk_dir }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.29'
+          channel: 'stable'
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Run analyzer
+        run: flutter analyze
+
+      - name: Bump version
+        id: version
+        run: |
+          # Extract current version from pubspec.yaml
+          CURRENT=$(grep '^version: ' pubspec.yaml | sed 's/version: //' | sed 's/+.*//')
+          BUILD=$(grep '^version: ' pubspec.yaml | sed 's/.*+//' | sed 's/+//')
+          echo "Current version: $CURRENT (build $BUILD)"
+          NEW_BUILD=$((BUILD + 1))
+          echo "version=$CURRENT+$NEW_BUILD" >> $GITHUB_OUTPUT
+          echo "base_version=$CURRENT" >> $GITHUB_OUTPUT
+
+      - name: Build APK (release)
+        id: build
+        run: |
+          flutter build apk --release --split-per-abi
+          echo "apk_dir=build/app/outputs/flutter-apk" >> $GITHUB_OUTPUT
+
+      - name: Upload APK Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: musika-apk-${{ steps.version.outputs.version }}
+          path: build/app/outputs/flutter-apk/*.apk
+          retention-days: 30
+
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.base_version }}
+          name: "Musika v${{ steps.version.outputs.base_version }}"
+          body: |
+            ## 🎵 Musika v${{ steps.version.outputs.base_version }}
+
+            ### Apa yang baru?
+            - Perbaikan performa dan stabilitas
+            - Update UI/UX
+            - Optimasi backend
+
+            ### Download APK
+            - **arm64-v8a** (direkomendasikan untuk device modern)
+            - **armeabi-v7a** (untuk device lawas)
+            - **x86_64** (untuk emulator/tablet)
+
+            ---
+            *Dibangun secara otomatis oleh GitHub Actions*
+          files: |
+            build/app/outputs/flutter-apk/*.apk
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload to CDN (optional)
+        if: success()
+        env:
+          CDN_URL: ${{ secrets.CDN_UPLOAD_URL }}
+        run: |
+          if [ -n "$CDN_URL" ]; then
+            echo "CDN upload URL configured - uploading..."
+            for apk in build/app/outputs/flutter-apk/*.apk; do
+              filename=$(basename "$apk")
+              echo "Uploading $filename..."
+              curl -s -X POST "$CDN_URL" \
+                -F "file=@$apk" \
+                --connect-timeout 30 \
+                --max-time 120 || echo "CDN upload skipped (not configured)"
+            done
+          else
+            echo "CDN upload skipped - no CDN_UPLOAD_URL configured"
+          fi
