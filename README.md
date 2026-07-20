@@ -1,19 +1,42 @@
 # Musika APK
 
-Musika - Native Android Music Player (Flutter)
+Musika - Native Android Music Player built with Flutter.
 
-## Download
-
-[Download APK v1.0.0](https://github.com/akaanakbaik/musika/releases/download/v1.0.0/musika-v1.0.1.apk)
+[![Download](https://img.shields.io/badge/Download-APK-green)](https://github.com/akaanakbaik/musika/releases/latest)
 
 ## Features
 
-- Full music search (YouTube, Spotify, Apple Music, SoundCloud)
-- Music download & streaming
-- Dark theme UI
-- AI Chat assistant
-- Favorites, playlists, history
+- 🎵 Multi-source music search (YouTube, Spotify, Apple Music, SoundCloud)
+- ⬇️ Music download & offline playback
+- 🎨 Dark theme UI
+- 🤖 AI Chat assistant
+- ❤️ Favorites, playlists, history
+- 🔄 Auto-fallback API (multiple providers)
 
-## Version
+## Tech Stack
 
-v1.0.0
+- **Framework:** Flutter 3.29+
+- **State Management:** Provider
+- **Storage:** flutter_secure_storage + shared_preferences
+- **HTTP:** http package
+
+## Backend API
+
+Backend server: [api-server-flax-xi.vercel.app](https://api-server-flax-xi.vercel.app)
+
+API health check: [api-server-flax-xi.vercel.app/api/health](https://api-server-flax-xi.vercel.app/api/health)
+
+## Build
+
+```bash
+flutter pub get
+flutter build apk --release --split-per-abi
+```
+
+## Download
+
+Download latest APK from [GitHub Releases](https://github.com/akaanakbaik/musika/releases).
+
+---
+
+📧 Contact: musika@akadev.me

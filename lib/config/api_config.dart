@@ -1,11 +1,11 @@
 class ApiConfig {
-  // Change this to your deployed backend URL
-  static const String baseUrl = 'http://10.0.2.2:3001'; // Android emulator localhost
+  // Base URL untuk Android emulator (10.0.2.2 = host localhost)
+  static const String baseUrl = 'http://10.0.2.2:3001';
 
-  // Will be updated after Vercel deployment
-  static const String productionUrl = 'https://musika-api.vercel.app';
+  // Production backend URL (Vercel)
+  static const String productionUrl = 'https://api-server-flax-xi.vercel.app';
 
   static const Duration timeout = Duration(seconds: 30);
 
-  static String get apiBase => baseUrl;
+  static String get apiBase => productionUrl;
 }
