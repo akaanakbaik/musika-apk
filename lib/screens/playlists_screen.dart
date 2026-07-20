@@ -4,7 +4,6 @@ import '../services/playlists_service.dart';
 import '../models/playlist.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/playlist_tile.dart';
-import '../config/theme.dart';
 import 'auth_screen.dart';
 import 'playlist_detail_screen.dart';
 

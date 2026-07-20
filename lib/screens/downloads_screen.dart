@@ -66,8 +66,11 @@ class _DownloadsScreenState extends State<DownloadsScreen> {
     } else if (_sortBy == 'artist') {
       list.sort((a, b) => a.artist.compareTo(b.artist));
     }
-    if (!_isSearching) _downloads = list;
-    else _filtered = list;
+    if (!_isSearching) {
+      _downloads = list;
+    } else {
+      _filtered = list;
+    }
   }
 
   Future<void> _load() async {
@@ -136,7 +139,9 @@ class _DownloadsScreenState extends State<DownloadsScreen> {
     setState(() {
       if (_selectedIds.contains(videoId)) {
         _selectedIds.remove(videoId);
-        if (_selectedIds.isEmpty) _selectionMode = false;
+        if (_selectedIds.isEmpty) {
+          _selectionMode = false;
+        }
       } else {
         _selectedIds.add(videoId);
       }
@@ -276,8 +281,10 @@ class _DownloadsScreenState extends State<DownloadsScreen> {
               : PopupMenuButton<String>(
                   icon: const Icon(Icons.more_vert, color: Colors.white54, size: 20),
                   onSelected: (value) {
-                    if (value == 'delete') _deleteDownload(song.videoId);
-                    if (value == 'select') {
+                    if (value == 'delete') {
+                          _deleteDownload(song.videoId);
+                        }
+                        if (value == 'select') {
                       _selectionMode = true;
                       _toggleSelection(song.videoId);
                     }

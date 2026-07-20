@@ -5,7 +5,6 @@ import '../models/song.dart';
 import '../models/playlist.dart';
 import '../providers/player_provider.dart';
 import '../widgets/song_tile.dart';
-import '../config/theme.dart';
 
 class PlaylistDetailScreen extends StatefulWidget {
   final String playlistId;

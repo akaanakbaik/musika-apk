@@ -5,8 +5,8 @@ String formatDuration(dynamic seconds) {
   final h = totalSec ~/ 3600;
   final m = (totalSec % 3600) ~/ 60;
   final s = totalSec % 60;
-  if (h > 0) return '${h}:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
-  return '${m}:${s.toString().padLeft(2, '0')}';
+  if (h > 0) return '$h:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+  return '$m:${s.toString().padLeft(2, '0')}';
 }
 
 /// Format milliseconds to readable duration

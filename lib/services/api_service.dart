@@ -12,11 +12,8 @@ class ApiService {
   final _storage = const FlutterSecureStorage();
   static const _tokenKey = 'musika_token_v3';
 
-  String _baseUrl = ApiConfig.apiBase;
+  final String _baseUrl = ApiConfig.apiBase;
   String? _token;
-
-  String get baseUrl => _baseUrl;
-  set baseUrl(String url) => _baseUrl = url;
 
   Future<String?> get token async {
     _token ??= await _storage.read(key: _tokenKey);

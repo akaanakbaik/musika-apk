@@ -222,8 +222,11 @@ class ProfileScreen extends StatelessWidget {
               title: Text(labels[i]),
               trailing: options[i] == current ? const Icon(Icons.check, color: AppTheme.primary) : null,
               onTap: () {
-                if (type == 'streaming') settings.setStreamingQuality(options[i]);
-                else settings.setAudioQuality(options[i]);
+                if (type == 'streaming') {
+                  settings.setStreamingQuality(options[i]);
+                } else {
+                  settings.setAudioQuality(options[i]);
+                }
                 Navigator.pop(context);
               },
             );

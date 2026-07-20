@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../services/music_service.dart';
 import '../models/song.dart';
 import '../providers/auth_provider.dart';
@@ -11,7 +10,6 @@ import '../widgets/error_widget.dart';
 import '../widgets/source_badge.dart';
 import '../config/theme.dart';
 import '../utils/constants.dart';
-import '../utils/formatting.dart';
 import 'profile_screen.dart';
 import 'search_screen.dart';
 import 'favorites_screen.dart';
@@ -33,8 +31,6 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Song> _recommendations = [];
   bool _loading = true;
   String? _error;
-  bool _refreshing = false;
-
   @override
   void initState() {
     super.initState();
@@ -64,9 +60,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _onRefresh() async {
-    setState(() => _refreshing = true);
     await _loadRecommendations();
-    setState(() => _refreshing = false);
   }
 
   @override
@@ -74,7 +68,6 @@ class _HomeScreenState extends State<HomeScreen> {
     final auth = context.watch<AuthProvider>();
     final player = context.watch<PlayerProvider>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final screenWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(
       appBar: AppBar(

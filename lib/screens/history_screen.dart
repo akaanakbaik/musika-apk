@@ -54,13 +54,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       _filtered = List.from(_history);
       return;
     }
-    final now = DateTime.now();
-    final cutoff = _timeFilter == 'today'
-        ? DateTime(now.year, now.month, now.day)
-        : _timeFilter == 'week'
-            ? now.subtract(const Duration(days: 7))
-            : now.subtract(const Duration(days: 30));
-    _filtered = _history.where((s) => true).toList();
+    _filtered = _history.where((_) => true).toList();
   }
 
   void _setTimeFilter(String filter) {

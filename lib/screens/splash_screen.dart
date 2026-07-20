@@ -21,9 +21,11 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     _fadeOut = Tween<double>(begin: 1, end: 0).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
     _controller.forward();
     Future.delayed(const Duration(milliseconds: 2500), () {
-      if (mounted) Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => widget.child),
-      );
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => widget.child),
+        );
+      }
     });
   }
 

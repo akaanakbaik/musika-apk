@@ -4,10 +4,7 @@ import '../services/music_service.dart';
 import '../models/song.dart';
 import '../providers/player_provider.dart';
 import '../widgets/song_tile.dart';
-import '../widgets/loading_widget.dart';
 import '../config/theme.dart';
-import '../utils/constants.dart';
-import '../utils/formatting.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});

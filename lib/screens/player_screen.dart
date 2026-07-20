@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../providers/player_provider.dart';
-import '../models/song.dart';
-import '../services/music_service.dart';
 import '../config/theme.dart';
 import '../utils/formatting.dart';
-import '../utils/constants.dart';
 import '../widgets/source_badge.dart';
 import 'package:provider/provider.dart';
 

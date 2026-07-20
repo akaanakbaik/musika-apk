@@ -7,13 +7,9 @@ import 'config/theme.dart';
 import 'screens/home_screen.dart';
 import 'screens/search_screen.dart';
 import 'screens/favorites_screen.dart';
-import 'screens/history_screen.dart';
 import 'screens/playlists_screen.dart';
-import 'screens/playlist_detail_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/ai_chat_screen.dart';
-import 'screens/auth_screen.dart';
-import 'widgets/bottom_player.dart';
 
 
 class MusikaApp extends StatelessWidget {
