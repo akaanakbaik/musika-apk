@@ -5,7 +5,6 @@ import '../models/song.dart';
 import '../providers/player_provider.dart';
 import '../widgets/song_tile.dart';
 import '../widgets/loading_widget.dart';
-import '../widgets/error_widget.dart';
 import '../config/theme.dart';
 import '../utils/constants.dart';
 import '../utils/formatting.dart';
