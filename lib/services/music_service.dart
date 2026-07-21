@@ -6,8 +6,7 @@ class MusicService {
   final ApiService _api = ApiService();
   final LinkedHashMap<String, List<Song>> _searchCache = LinkedHashMap();
   static const int _maxCacheEntries = 20;
-  static const List<String> _searchOrder = ['youtube', 'spotify', 'apple', 'soundcloud'];
-  static const List<String> _fallbackSources = ['youtube', 'spotify', 'apple', 'soundcloud'];
+  static const List<String> _searchSources = ['youtube', 'spotify', 'apple', 'soundcloud'];
 
   Future<Map<String, dynamic>> rawSearch(String query, {String source = 'all'}) async {
     return await _api.get('/api/music/search', query: {
@@ -41,6 +40,26 @@ class MusicService {
     return await _api.get('/api/music/recommendations', auth: false);
   }
 
+  bool _isGoodQuality(Song song) {
+    final durationSec = _parseDuration(song.duration);
+    return song.title.isNotEmpty &&
+        song.artist.isNotEmpty &&
+        song.artist != 'Unknown Artist' &&
+        durationSec > 30;
+  }
+
+  int _parseDuration(String duration) {
+    if (duration.isEmpty) return 0;
+    final parts = duration.split(':');
+    if (parts.length == 2) {
+      return int.tryParse(parts[0])! * 60 + int.tryParse(parts[1]) ?? 0;
+    }
+    if (parts.length == 3) {
+      return int.tryParse(parts[0])! * 3600 + int.tryParse(parts[1])! * 60 + int.tryParse(parts[2]) ?? 0;
+    }
+    return int.tryParse(duration) ?? 0;
+  }
+
   List<Song> _deduplicate(List<Song> songs) {
     final seen = <String>{};
     final result = <Song>[];
@@ -60,12 +79,6 @@ class MusicService {
     _searchCache[query] = songs;
   }
 
-  bool _isGoodQuality(Song song) {
-    return song.title.isNotEmpty &&
-        song.artist.isNotEmpty &&
-        song.duration > 30;
-  }
-
   Future<List<Song>> smartSearch(String query) async {
     if (_searchCache.containsKey(query)) {
       final cached = _searchCache[query]!;
@@ -77,7 +90,7 @@ class MusicService {
 
     if (results['success'] == true) {
       final resultMap = results['results'] as Map<String, dynamic>? ?? {};
-      for (final src in _searchOrder) {
+      for (final src in _searchSources) {
         final items = resultMap[src] as List<dynamic>? ?? [];
         final songs = items
             .map((e) => Song.fromJson(e as Map<String, dynamic>))
@@ -86,7 +99,7 @@ class MusicService {
         allSongs.addAll(songs);
       }
     } else {
-      for (final src in _fallbackSources) {
+      for (final src in _searchSources) {
         final fallbackRes = await searchSource(src, query);
         if (fallbackRes['success'] == true) {
           final items = fallbackRes['results'] as List<dynamic>? ?? [];

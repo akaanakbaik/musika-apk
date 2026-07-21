@@ -15,13 +15,13 @@ class ApiService {
   static const _tokenKey = 'musika_token_v3';
 
   final List<String> _baseUrls = ApiConfig.allUrls;
-  int _currentUrlIndex = 0;
   String? _token;
   int _consecutiveFails = 0;
-  static const int _maxRetries = 2;
+  static const int _maxRetriesPerUrl = 2;
   static const int _fallbackThreshold = 3;
 
   String get _baseUrl => _baseUrls[_currentUrlIndex];
+  int _currentUrlIndex = 0;
   int get currentUrlIndex => _currentUrlIndex;
   int get totalUrls => _baseUrls.length;
 
@@ -77,35 +77,27 @@ class ApiService {
     return delay;
   }
 
-  Future<Map<String, dynamic>> _executeRequest(
-    Future<http.Response> Function(String url, Map<String, String> headers) requestFactory,
-    String path, {
+  Future<Map<String, dynamic>> _executeRequest({
+    required Future<http.Response> Function(String url, Map<String, String> headers) requestFactory,
+    required String path,
     bool auth = true,
     Map<String, dynamic>? body,
     Map<String, String>? query,
   }) async {
-    final maxAttempts = _baseUrls.length * (_maxRetries + 1);
+    final maxAttempts = _baseUrls.length * (_maxRetriesPerUrl + 1);
     Map<String, dynamic>? lastError;
 
     for (int attempt = 0; attempt < maxAttempts; attempt++) {
-      final urlIndex = _currentUrlIndex;
-      final baseUrl = _baseUrls[urlIndex];
       final headers = await _headers(auth: auth);
 
       try {
-        var uri = Uri.parse('$baseUrl$path');
+        var uri = Uri.parse('$_baseUrl$path');
         if (query != null && query.isNotEmpty) {
           uri = uri.replace(queryParameters: query);
         }
 
-        http.Response response;
-        if (body != null) {
-          response = await requestFactory(uri.toString(), headers)
-              .timeout(ApiConfig.timeout);
-        } else {
-          response = await requestFactory(uri.toString(), headers)
-              .timeout(ApiConfig.timeout);
-        }
+        final response = await requestFactory(uri.toString(), headers)
+            .timeout(ApiConfig.timeout);
 
         if (response.statusCode == 429) {
           await Future.delayed(const Duration(seconds: 2));
@@ -120,18 +112,23 @@ class ApiService {
 
         final data = jsonDecode(response.body) as Map<String, dynamic>;
 
-        if (response.statusCode >= 400) {
+        if (response.statusCode >= 500) {
           lastError = {
+            'success': false,
+            'error': data['error'] ?? 'Server error (${response.statusCode})',
+            'code': response.statusCode,
+          };
+          _tryFallback();
+          continue;
+        }
+
+        if (response.statusCode >= 400) {
+          _resetFailures();
+          return {
             'success': false,
             'error': data['error'] ?? 'Request failed (${response.statusCode})',
             'code': response.statusCode,
           };
-          if (response.statusCode >= 500) {
-            _tryFallback();
-            continue;
-          }
-          _resetFailures();
-          return lastError!;
         }
 
         _resetFailures();
@@ -152,7 +149,8 @@ class ApiService {
         _tryFallback();
         await _backoff(attempt);
       } catch (e) {
-        lastError = {'success': false, 'error': 'Unexpected error: ${e.toString().substring(0, e.toString().length > 80 ? 80 : e.toString().length)}', 'retryable': true};
+        final msg = e.toString();
+        lastError = {'success': false, 'error': 'Error: ${msg.length > 80 ? msg.substring(0, 80) : msg}', 'retryable': true};
         _tryFallback();
         await _backoff(attempt);
       }
@@ -163,8 +161,8 @@ class ApiService {
 
   Future<Map<String, dynamic>> get(String path, {bool auth = true, Map<String, String>? query}) async {
     return _executeRequest(
-      (url, headers) => http.get(Uri.parse(url), headers: headers),
-      path,
+      requestFactory: (url, headers) => http.get(Uri.parse(url), headers: headers),
+      path: path,
       auth: auth,
       query: query,
     );
@@ -172,8 +170,8 @@ class ApiService {
 
   Future<Map<String, dynamic>> post(String path, {Map<String, dynamic>? body, bool auth = true}) async {
     return _executeRequest(
-      (url, headers) => http.post(Uri.parse(url), headers: headers, body: body != null ? jsonEncode(body) : null),
-      path,
+      requestFactory: (url, headers) => http.post(Uri.parse(url), headers: headers, body: body != null ? jsonEncode(body) : null),
+      path: path,
       auth: auth,
       body: body,
     );
@@ -181,8 +179,8 @@ class ApiService {
 
   Future<Map<String, dynamic>> put(String path, {Map<String, dynamic>? body, bool auth = true}) async {
     return _executeRequest(
-      (url, headers) => http.put(Uri.parse(url), headers: headers, body: body != null ? jsonEncode(body) : null),
-      path,
+      requestFactory: (url, headers) => http.put(Uri.parse(url), headers: headers, body: body != null ? jsonEncode(body) : null),
+      path: path,
       auth: auth,
       body: body,
     );
@@ -190,8 +188,8 @@ class ApiService {
 
   Future<Map<String, dynamic>> delete(String path, {bool auth = true}) async {
     return _executeRequest(
-      (url, headers) => http.delete(Uri.parse(url), headers: headers),
-      path,
+      requestFactory: (url, headers) => http.delete(Uri.parse(url), headers: headers),
+      path: path,
       auth: auth,
     );
   }

@@ -64,16 +64,18 @@ class AuthService {
     final res = await _api.post('/api/auth/otp/send', body: {'email': email}, auth: false);
     if (res['success'] == true) {
       _otpResendCooldown = 60;
-      Future.delayed(const Duration(seconds: 1), () {
-        if (_otpResendCooldown > 0) {
-          _otpResendCooldown--;
-          if (_otpResendCooldown == 0) {
-            Future(() {});
-          }
-        }
-      });
+      _startCooldownTimer();
     }
     return res;
+  }
+
+  void _startCooldownTimer() {
+    Future.doWhile(() async {
+      await Future.delayed(const Duration(seconds: 1));
+      if (_otpResendCooldown <= 0) return false;
+      _otpResendCooldown--;
+      return _otpResendCooldown > 0;
+    });
   }
 
   Future<Map<String, dynamic>> verifyOtp(String email, String code) async {
