@@ -11,83 +11,233 @@ on:
       version_bump:
         description: 'Version bump type'
         required: true
-        default: 'patch'
+        default: 'minor'
         type: choice
         options:
           - patch
           - minor
           - major
 
-jobs:
-  build:
-    name: Build APK
-    runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.version.outputs.version }}
-      apk_dir: ${{ steps.build.outputs.apk_dir }}
+env:
+  FLUTTER_VERSION: '3.29'
+  JAVA_VERSION: '17'
 
+jobs:
+  analyze:
+    name: Analyze Code
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.29'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: 'stable'
+
+      - name: Cache Flutter dependencies
+        uses: actions/cache@v4
+        with:
+          path: /opt/hostedtoolcache/flutter
+          key: flutter-${{ env.FLUTTER_VERSION }}-${{ hashFiles('pubspec.lock') }}
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Run static analysis
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+  test:
+    name: Run Tests
+    needs: analyze
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: 'stable'
 
       - name: Get dependencies
         run: flutter pub get
 
-      - name: Run analyzer
-        run: flutter analyze
+      - name: Run widget tests
+        run: flutter test --coverage
 
-      - name: Bump version
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: coverage/lcov.info
+          retention-days: 7
+
+  build:
+    name: Build APK
+    needs: analyze
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      base_version: ${{ steps.version.outputs.base_version }}
+      build_number: ${{ steps.version.outputs.build_number }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: 'stable'
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Determine version
         id: version
         run: |
-          # Extract current version from pubspec.yaml
           CURRENT=$(grep '^version: ' pubspec.yaml | sed 's/version: //' | sed 's/+.*//')
-          BUILD=$(grep '^version: ' pubspec.yaml | sed 's/.*+//' | sed 's/+//')
-          echo "Current version: $CURRENT (build $BUILD)"
+          BUILD=$(grep '^version: ' pubspec.yaml | sed 's/.*+//')
           NEW_BUILD=$((BUILD + 1))
-          echo "version=$CURRENT+$NEW_BUILD" >> $GITHUB_OUTPUT
-          echo "base_version=$CURRENT" >> $GITHUB_OUTPUT
 
-      - name: Build APK (release)
+          # Check input version_bump for manual triggers
+          BUMP_TYPE="${{ github.event.inputs.version_bump }}"
+          if [ -z "$BUMP_TYPE" ]; then
+            # Auto-detect: patch bump by default
+            MAJOR=$(echo $CURRENT | cut -d. -f1)
+            MINOR=$(echo $CURRENT | cut -d. -f2)
+            PATCH=$(echo $CURRENT | cut -d. -f3)
+            PATCH=$((PATCH + 1))
+            NEW_VERSION="$MAJOR.$MINOR.$PATCH"
+          else
+            if [ "$BUMP_TYPE" = "patch" ]; then
+              MAJOR=$(echo $CURRENT | cut -d. -f1)
+              MINOR=$(echo $CURRENT | cut -d. -f2)
+              PATCH=$(echo $CURRENT | cut -d. -f3)
+              PATCH=$((PATCH + 1))
+              NEW_VERSION="$MAJOR.$MINOR.$PATCH"
+            elif [ "$BUMP_TYPE" = "minor" ]; then
+              MAJOR=$(echo $CURRENT | cut -d. -f1)
+              MINOR=$(echo $CURRENT | cut -d. -f2)
+              MINOR=$((MINOR + 1))
+              NEW_VERSION="$MAJOR.$MINOR.0"
+            elif [ "$BUMP_TYPE" = "major" ]; then
+              MAJOR=$(echo $CURRENT | cut -d. -f1)
+              MAJOR=$((MAJOR + 1))
+              NEW_VERSION="$MAJOR.0.0"
+            else
+              NEW_VERSION="$CURRENT"
+            fi
+          fi
+
+          sed -i "s/^version: .*/version: $NEW_VERSION+$NEW_BUILD/" pubspec.yaml
+          echo "version=$NEW_VERSION+$NEW_BUILD" >> $GITHUB_OUTPUT
+          echo "base_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "build_number=$NEW_BUILD" >> $GITHUB_OUTPUT
+
+      - name: Build APK release
         id: build
         run: |
           flutter build apk --release --split-per-abi
+          echo "APK built successfully"
           echo "apk_dir=build/app/outputs/flutter-apk" >> $GITHUB_OUTPUT
+
+      - name: Verify APK files
+        run: |
+          echo "=== APK Build Output ==="
+          ls -lh build/app/outputs/flutter-apk/
+          for apk in build/app/outputs/flutter-apk/*.apk; do
+            size=$(stat --format=%s "$apk")
+            size_mb=$(echo "scale=2; $size / 1048576" | bc)
+            echo "  $(basename $apk): ${size_mb}MB"
+          done
 
       - name: Upload APK Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: musika-apk-${{ steps.version.outputs.version }}
           path: build/app/outputs/flutter-apk/*.apk
+          compression-level: 0
           retention-days: 30
 
+  release:
+    name: Create Release
+    needs: [analyze, test, build]
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download APK artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: musika-apk-${{ needs.build.outputs.version }}
+          path: ./apk-output
+
+      - name: Get APK sizes
+        id: apk_info
+        run: |
+          echo "=== APK Files ==="
+          APK_LIST=""
+          for apk in apk-output/*.apk; do
+            name=$(basename "$apk")
+            size=$(stat --format=%s "$apk")
+            size_kb=$(echo "scale=1; $size / 1024" | bc)
+            APK_LIST="${APK_LIST}- **${name}**: ${size_kb}KB\\n"
+          done
+          echo "apk_list<<EOF" >> $GITHUB_OUTPUT
+          echo -e "$APK_LIST" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
       - name: Create Release
-        id: create_release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ steps.version.outputs.base_version }}
-          name: "Musika v${{ steps.version.outputs.base_version }}"
+          tag_name: v${{ needs.build.outputs.base_version }}
+          name: "Musika v${{ needs.build.outputs.base_version }}"
           body: |
-            ## 🎵 Musika v${{ steps.version.outputs.base_version }}
+            ## 🎵 Musika v${{ needs.build.outputs.base_version }}
 
-            ### Apa yang baru?
-            - Perbaikan performa dan stabilitas
-            - Update UI/UX
-            - Optimasi backend
+            ### ✨ Improvements
+            - Smart search with auto-fallback between providers
+            - Shuffle & repeat modes (none, one, all)
+            - AI chat with fallback providers (auto-switch)
+            - Retry logic with exponential backoff for all API calls
+            - Download queue management with status tracking
+            - Auth with OTP resend cooldown and user caching
+            - Performance optimizations and memory improvements
 
-            ### Download APK
-            - **arm64-v8a** (direkomendasikan untuk device modern)
-            - **armeabi-v7a** (untuk device lawas)
-            - **x86_64** (untuk emulator/tablet)
+            ### 📥 Download APK
+            ${{ steps.apk_info.outputs.apk_list }}
+
+            ### 🔗 Links
+            - **Backend API**: https://api-server-flax-xi.vercel.app
+            - **Source Code**: https://github.com/akaanakbaik/musika
 
             ---
-            *Dibangun secara otomatis oleh GitHub Actions*
+            *Built automatically by GitHub Actions*
           files: |
-            build/app/outputs/flutter-apk/*.apk
+            apk-output/*.apk
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -98,14 +248,23 @@ jobs:
           CDN_URL: ${{ secrets.CDN_UPLOAD_URL }}
         run: |
           if [ -n "$CDN_URL" ]; then
-            echo "CDN upload URL configured - uploading..."
-            for apk in build/app/outputs/flutter-apk/*.apk; do
+            echo "CDN upload URL configured - attempting upload..."
+            for apk in apk-output/*.apk; do
               filename=$(basename "$apk")
-              echo "Uploading $filename..."
-              curl -s -X POST "$CDN_URL" \
-                -F "file=@$apk" \
-                --connect-timeout 30 \
-                --max-time 120 || echo "CDN upload skipped (not configured)"
+              size=$(stat --format=%s "$apk")
+              size_mb=$(echo "scale=2; $size / 1048576" | bc)
+              echo "Uploading $filename (${size_mb}MB)..."
+              if (( $(echo "$size_mb > 5" | bc -l) )); then
+                echo "  ⚠️ File too large for CDN (${size_mb}MB > 5MB limit). Skipping CDN upload."
+                echo "  ✅ File available on GitHub Releases instead."
+              else
+                curl -s -X POST "$CDN_URL" \
+                  -F "file=@$apk" \
+                  --connect-timeout 30 \
+                  --max-time 120 \
+                  --output /dev/null \
+                  -w "  HTTP %{http_code} - Uploaded\n" || echo "  CDN upload failed (non-critical)"
+              fi
             done
           else
             echo "CDN upload skipped - no CDN_UPLOAD_URL configured"
