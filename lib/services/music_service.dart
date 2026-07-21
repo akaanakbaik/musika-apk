@@ -52,10 +52,12 @@ class MusicService {
     if (duration.isEmpty) return 0;
     final parts = duration.split(':');
     if (parts.length == 2) {
-      return int.tryParse(parts[0])! * 60 + int.tryParse(parts[1]) ?? 0;
+      return ((int.tryParse(parts[0]) ?? 0) * 60) + (int.tryParse(parts[1]) ?? 0);
     }
     if (parts.length == 3) {
-      return int.tryParse(parts[0])! * 3600 + int.tryParse(parts[1])! * 60 + int.tryParse(parts[2]) ?? 0;
+      return ((int.tryParse(parts[0]) ?? 0) * 3600) +
+             ((int.tryParse(parts[1]) ?? 0) * 60) +
+             (int.tryParse(parts[2]) ?? 0);
     }
     return int.tryParse(duration) ?? 0;
   }
