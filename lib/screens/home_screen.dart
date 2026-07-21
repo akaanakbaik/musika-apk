@@ -6,7 +6,7 @@ import '../providers/auth_provider.dart';
 import '../providers/player_provider.dart';
 import '../widgets/song_tile.dart';
 import '../widgets/loading_widget.dart';
-import '../widgets/error_widget.dart';
+
 import '../widgets/source_badge.dart';
 import '../config/theme.dart';
 import '../utils/constants.dart';
@@ -595,7 +595,7 @@ class _HomeShimmer extends StatelessWidget {
                       Container(
                         width: 120, height: 10,
                         decoration: BoxDecoration(
-                          color: Colors.white8,
+                          color: Colors.white10,
                           borderRadius: BorderRadius.circular(4),
                         ),
                       ),
