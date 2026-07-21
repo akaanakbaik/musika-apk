@@ -45,9 +45,7 @@ jobs:
     needs: [analyze, test]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/master'
-    strategy:
-      matrix:
-        arch: [arm64-v8a, armeabi-v7a]
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
@@ -64,10 +62,11 @@ jobs:
             ~/.gradle/caches
             ~/.gradle/wrapper
           key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
       - run: flutter pub get
-      - name: Build ${{ matrix.arch }}
-        run: flutter build apk --release --target-platform android-${{ matrix.arch }}
+      - run: flutter build apk --release --split-per-abi
       - uses: actions/upload-artifact@v4
         with:
-          name: musika-${{ matrix.arch }}
-          path: build/app/outputs/flutter-apk/app-${{ matrix.arch }}-release.apk
+          name: musika-release-apk
+          path: build/app/outputs/flutter-apk/*.apk
