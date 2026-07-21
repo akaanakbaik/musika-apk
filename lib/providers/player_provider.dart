@@ -20,7 +20,7 @@ class PlayerProvider extends ChangeNotifier {
   String? _streamUrl;
   RepeatMode _repeatMode = RepeatMode.none;
   bool _shuffle = false;
-  List<String> _playHistory = [];
+  final List<String> _playHistory = [];
   static const int _maxHistorySize = 50;
   double _volume = 1.0;
   bool _muted = false;
@@ -200,7 +200,7 @@ class PlayerProvider extends ChangeNotifier {
   void removeFromQueue(int index) {
     final current = _currentSong;
     if (index >= 0 && index < _originalQueue.length) {
-      final song = _originalQueue.removeAt(index);
+      _originalQueue.removeAt(index);
       if (_shuffle && current != null) {
         _shuffledQueue = List.from(_originalQueue);
         _shuffledQueue.shuffle(_random);

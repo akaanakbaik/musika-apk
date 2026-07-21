@@ -92,7 +92,7 @@ class AuthService {
 
   Future<User?> getCurrentUser() async {
     if (_cachedUser != null) return _cachedUser;
-    final res = await getMe();
+    await getMe();
     return _cachedUser;
   }
 
