@@ -42,18 +42,19 @@ class PlayerProvider extends ChangeNotifier {
   int get queueLength => queue.length;
 
   void toggleShuffle() {
+    final current = _currentSong;
     _shuffle = !_shuffle;
     if (_shuffle) {
       _shuffledQueue = List.from(_originalQueue);
-      if (_currentSong != null) {
-        _shuffledQueue.remove(_currentSong);
+      if (current != null) {
+        _shuffledQueue.remove(current);
         _shuffledQueue.shuffle(_random);
-        _shuffledQueue.insert(0, _currentSong);
+        _shuffledQueue.insert(0, current);
         _currentIndex = 0;
       }
     } else {
-      if (_currentSong != null) {
-        _currentIndex = _originalQueue.indexOf(_currentSong!);
+      if (current != null) {
+        _currentIndex = _originalQueue.indexOf(current);
         if (_currentIndex < 0) _currentIndex = 0;
       }
     }
@@ -146,10 +147,11 @@ class PlayerProvider extends ChangeNotifier {
   }
 
   Future<void> next() async {
+    final current = _currentSong;
     if (_originalQueue.isEmpty) return;
 
-    if (_repeatMode == RepeatMode.one && _currentSong != null) {
-      await playSong(_currentSong!, queue: _originalQueue);
+    if (_repeatMode == RepeatMode.one && current != null) {
+      await playSong(current, queue: _originalQueue);
       return;
     }
 
@@ -196,13 +198,14 @@ class PlayerProvider extends ChangeNotifier {
   }
 
   void removeFromQueue(int index) {
+    final current = _currentSong;
     if (index >= 0 && index < _originalQueue.length) {
       final song = _originalQueue.removeAt(index);
-      if (_shuffle && _currentSong != null) {
+      if (_shuffle && current != null) {
         _shuffledQueue = List.from(_originalQueue);
         _shuffledQueue.shuffle(_random);
-        _shuffledQueue.remove(_currentSong);
-        _shuffledQueue.insert(0, _currentSong!);
+        _shuffledQueue.remove(current);
+        _shuffledQueue.insert(0, current);
         _currentIndex = 0;
       }
       notifyListeners();
@@ -217,14 +220,15 @@ class PlayerProvider extends ChangeNotifier {
   }
 
   void reorderQueue(int oldIndex, int newIndex) {
+    final current = _currentSong;
     if (oldIndex < newIndex) newIndex--;
     final song = _originalQueue.removeAt(oldIndex);
     _originalQueue.insert(newIndex, song);
-    if (_shuffle && _currentSong != null) {
+    if (_shuffle && current != null) {
       _shuffledQueue = List.from(_originalQueue);
       _shuffledQueue.shuffle(_random);
-      _shuffledQueue.remove(_currentSong);
-      _shuffledQueue.insert(0, _currentSong!);
+      _shuffledQueue.remove(current);
+      _shuffledQueue.insert(0, current);
       _currentIndex = 0;
     }
     notifyListeners();

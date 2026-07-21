@@ -32,21 +32,8 @@ class _SearchScreenState extends State<SearchScreen> {
     if (query.trim().isEmpty) return;
     setState(() => _loading = true);
     try {
-      final res = await _musicService.search(query, source: _selectedSource);
-      if (res['success'] == true) {
-        final results = res['results'] as Map<String, dynamic>? ?? {};
-        final songs = <Song>[];
-        if (_selectedSource == 'all') {
-          for (final src in ['youtube', 'spotify', 'apple', 'soundcloud']) {
-            final items = results[src] as List<dynamic>? ?? [];
-            songs.addAll(items.map((e) => Song.fromJson(e as Map<String, dynamic>)));
-          }
-        } else {
-          final items = results[_selectedSource] as List<dynamic>? ?? [];
-          songs.addAll(items.map((e) => Song.fromJson(e as Map<String, dynamic>)));
-        }
-        _results = songs;
-      }
+      final songs = await _musicService.searchSongs(query, source: _selectedSource);
+      if (mounted) setState(() => _results = songs);
     } catch (_) {}
     if (mounted) setState(() => _loading = false);
   }
@@ -82,7 +69,6 @@ class _SearchScreenState extends State<SearchScreen> {
               textInputAction: TextInputAction.search,
             ),
           ),
-          // Source filter chips
           SizedBox(
             height: 44,
             child: ListView(
