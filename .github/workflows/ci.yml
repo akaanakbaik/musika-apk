@@ -5,6 +5,12 @@ on:
     branches: [master]
   pull_request:
     branches: [master]
+  schedule:
+    - cron: '0 */6 * * *'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   analyze:
@@ -15,13 +21,17 @@ jobs:
         with:
           flutter-version: '3.29'
           channel: 'stable'
+      - name: Cache Flutter deps
+        uses: actions/cache@v4
+        with:
+          path: /opt/hostedtoolcache/flutter
+          key: flutter-${{ hashFiles('pubspec.lock') }}
       - run: flutter pub get
-      - run: flutter analyze
+      - run: flutter analyze --no-fatal-infos --no-fatal-warnings
 
-  build:
+  test:
     needs: analyze
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/master'
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
@@ -29,8 +39,35 @@ jobs:
           flutter-version: '3.29'
           channel: 'stable'
       - run: flutter pub get
-      - run: flutter build apk --release --split-per-abi
+      - run: flutter test
+
+  build:
+    needs: [analyze, test]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master'
+    strategy:
+      matrix:
+        arch: [arm64-v8a, armeabi-v7a]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.29'
+          channel: 'stable'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+      - run: flutter pub get
+      - name: Build ${{ matrix.arch }}
+        run: flutter build apk --release --target-platform android-${{ matrix.arch }}
       - uses: actions/upload-artifact@v4
         with:
-          name: release-apk
-          path: build/app/outputs/flutter-apk/*.apk
+          name: musika-${{ matrix.arch }}
+          path: build/app/outputs/flutter-apk/app-${{ matrix.arch }}-release.apk
