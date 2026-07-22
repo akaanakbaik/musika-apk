@@ -159,7 +159,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
           // Menu Items
           _MenuButton(
-            icon: Icons.person_edit_outlined,
+            icon: Icons.edit_outlined,
             title: 'Edit Profil',
             subtitle: 'Ubah nama tampilan dan bio',
             onTap: () => _editProfile(context, auth),

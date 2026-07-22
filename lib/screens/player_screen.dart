@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../providers/player_provider.dart';
+import '../models/song.dart';
 import '../config/theme.dart';
 import '../utils/formatting.dart';
 import '../widgets/source_badge.dart';

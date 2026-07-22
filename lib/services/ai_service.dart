@@ -37,7 +37,7 @@ class AiService {
       _consecutiveFails++;
       // Direct GET to /api/ai/chat as final fallback
       try {
-        const getRes = await _api.get('/api/ai/chat', query: {'message': message}, auth: false);
+        final getRes = await _api.get('/api/ai/chat', query: {'message': message}, auth: false);
         if (getRes['success'] == true) {
           _consecutiveFails = 0;
           return getRes;
