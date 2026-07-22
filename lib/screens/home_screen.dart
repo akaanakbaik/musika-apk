@@ -7,6 +7,7 @@ import '../providers/player_provider.dart';
 import '../widgets/song_tile.dart';
 import '../widgets/loading_widget.dart';
 
+import '../widgets/source_badge.dart';
 import '../config/theme.dart';
 import 'profile_screen.dart';
 import 'search_screen.dart';

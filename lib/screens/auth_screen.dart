@@ -124,14 +124,14 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
       body: TabBarView(
         controller: _tabController,
         children: [
-          _buildLogin(),
-          _buildRegister(),
+          _buildLogin(isDark),
+          _buildRegister(isDark),
         ],
       ),
     );
   }
 
-  Widget _buildLogin() {
+  Widget _buildLogin(bool isDark) {
     return Consumer<AuthProvider>(
       builder: (_, auth, __) => SingleChildScrollView(
         padding: const EdgeInsets.all(24),
@@ -208,7 +208,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   ),
                   child: auth.loading
-                      ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.black))
+                      ? SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.black))
                       : const Text('Masuk', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
                 ),
               ),
@@ -243,7 +243,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
     );
   }
 
-  Widget _buildRegister() {
+  Widget _buildRegister(bool isDark) {
     return Consumer<AuthProvider>(
       builder: (_, auth, __) => SingleChildScrollView(
         padding: const EdgeInsets.all(24),
@@ -335,7 +335,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   ),
                   child: auth.loading
-                      ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.black))
+                      ? SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.black))
                       : const Text('Daftar', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
                 ),
               ),
@@ -410,7 +410,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                       },
                 style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
                 child: sending
-                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
+                    ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
                     : const Text('Kirim Kode Reset'),
               ),
             ),
