@@ -194,7 +194,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   }
 
   Widget _buildBody(PlayerProvider player) {
-    if (_loading) return const LoadingWidget(message: 'Loading favorites...');
+    if (_loading) return const LoadingWidget(message: 'Memuat favorit...');
     if (_error != null) {
       return ServerErrorWidget(error: _error, onRetry: _load);
     }
@@ -206,7 +206,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
             children: [
               const Icon(Icons.search_off, size: 48, color: Colors.white24),
               const SizedBox(height: 12),
-              Text('No favorites match "${_searchCtrl.text}"', style: TextStyle(color: Colors.grey[400], fontSize: 13)),
+              Text('Tidak ada favorit untuk "${_searchCtrl.text}"', style: TextStyle(color: Colors.grey[400], fontSize: 13)),
             ],
           ),
         );
@@ -217,9 +217,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           children: [
             Icon(Icons.favorite_border, size: 64, color: Colors.grey[600]),
             const SizedBox(height: 16),
-            Text('No favorites yet', style: TextStyle(color: Colors.grey[400])),
+            Text('Belum ada favorit', style: TextStyle(color: Colors.grey[400])),
             const SizedBox(height: 8),
-            Text('Tap the heart icon to add songs', style: TextStyle(fontSize: 13, color: Colors.grey[600])),
+            Text('Ketuk ikon hati untuk menambah lagu', style: TextStyle(fontSize: 13, color: Colors.grey[600])),
           ],
         ),
       );
