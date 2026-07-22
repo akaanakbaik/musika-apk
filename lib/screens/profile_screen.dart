@@ -190,7 +190,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               icon: const Icon(Icons.logout, size: 18, color: Colors.redAccent),
               label: const Text('Keluar', style: TextStyle(color: Colors.redAccent, fontSize: 15)),
               style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Colors.redAccent.withValues(alpha: 0.5)),
+                side: BorderSide(color: Colors.redAccent.withValues(alpha: 0.5)),
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
