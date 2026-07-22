@@ -188,9 +188,10 @@ class _DownloadsScreenState extends State<DownloadsScreen> {
       final dlUrl = response['download_url'] as String;
       final httpResp = await HttpClient().getUrl(Uri.parse(dlUrl));
       final httpBody = await httpResp.close();
+      final bodyBytes = await httpBody.reduce((a, b) => a + b);
       
       final audioFile = File(audioPath);
-      await audioFile.writeAsBytes(await httpBody.toList());
+      await audioFile.writeAsBytes(bodyBytes);
       
       // Save metadata
       final metaFile = File(metaPath);

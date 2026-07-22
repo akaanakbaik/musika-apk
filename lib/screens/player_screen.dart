@@ -240,7 +240,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                 builder: (_) => ShareSongSheet(song: song),
               );
             }),
-            _actionButton(Icons.add_queue_outlined, 'Antrian', () {
+            _actionButton(Icons.playlist_add, 'Antrian', () {
               player.addToQueue(song);
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Ditambahkan ke antrian'), behavior: SnackBarBehavior.floating, duration: Duration(seconds: 1)),

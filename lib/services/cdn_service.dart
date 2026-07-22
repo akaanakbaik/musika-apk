@@ -35,10 +35,11 @@ class CdnService {
         final uri = Uri.parse(provider['url']!);
         final request = http.MultipartRequest('POST', uri);
         request.files.add(await http.MultipartFile.fromPath('file', imageFile.path, filename: filename));
-        request.timeout = const Duration(seconds: 120);
 
-        final streamedResponse = await request.send();
+        final client = http.Client();
+        final streamedResponse = await client.send(request).timeout(const Duration(seconds: 120));
         final response = await http.Response.fromStream(streamedResponse);
+        client.close();
         final data = jsonDecode(response.body) as Map<String, dynamic>;
 
         if (response.statusCode == 200 && data['url'] != null) {

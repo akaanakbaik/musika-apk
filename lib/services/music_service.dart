@@ -3,13 +3,20 @@ import 'dart:async';
 import '../models/song.dart';
 import 'api_service.dart';
 
+class _MusicCacheEntry {
+  final List<Song> songs;
+  final DateTime cachedAt;
+  static const Duration cacheTtl = Duration(minutes: 5);
+  _MusicCacheEntry(this.songs, this.cachedAt);
+  bool get isExpired => DateTime.now().difference(cachedAt) > cacheTtl;
+}
+
 class MusicService {
   final ApiService _api = ApiService();
 
   // ===== SEARCH CACHE =====
-  final LinkedHashMap<String, _CacheEntry> _searchCache = LinkedHashMap();
+  final LinkedHashMap<String, _MusicCacheEntry> _searchCache = LinkedHashMap();
   static const int _maxCacheEntries = 30;
-  static const Duration _cacheTtl = Duration(minutes: 5);
 
   // ===== DEBOUNCE =====
   Timer? _debounceTimer;
@@ -21,20 +28,12 @@ class MusicService {
   // ===== SOURCES =====
   static const List<String> _searchSources = ['youtube', 'spotify', 'apple', 'soundcloud'];
 
-  class _CacheEntry {
-    final List<Song> songs;
-    final DateTime cachedAt;
-    _CacheEntry(this.songs, this.cachedAt);
-    bool get isExpired => DateTime.now().difference(cachedAt) > _cacheTtl;
-  }
-
   // ===== SEARCH WITH DEBOUNCE =====
   Future<List<Song>> debouncedSearch(String query, {String source = 'all'}) {
     _debounceTimer?.cancel();
     _lastQuery = query;
     final completer = Completer<List<Song>>();
 
-    // Check debounce interval
     final elapsed = DateTime.now().difference(_lastSearchTime);
     final delay = elapsed < _minInterval
         ? _debounceDelay + (_minInterval - elapsed)
@@ -85,34 +84,19 @@ class MusicService {
   // ===== QUALITY SCORING =====
   int _qualityScore(Song song) {
     int score = 0;
-
-    // Title length & quality
     if (song.title.isNotEmpty) score += 10;
     if (song.title.length > 10) score += 5;
-
-    // Artist quality
     if (song.artist.isNotEmpty && song.artist != 'Unknown Artist') score += 10;
-
-    // Thumbnail
     if (song.thumbnail.isNotEmpty) score += 5;
-
-    // Duration
     final dur = _parseDuration(song.duration);
     if (dur >= 60 && dur <= 600) score += 10;
     else if (dur > 30) score += 5;
-
-    // URL
     if (song.url.isNotEmpty) score += 5;
-
-    // Video ID (unique identifier present)
     if (song.videoId.isNotEmpty) score += 5;
-
     return score;
   }
 
-  bool _isGoodQuality(Song song) {
-    return _qualityScore(song) >= 20;
-  }
+  bool _isGoodQuality(Song song) => _qualityScore(song) >= 20;
 
   int _parseDuration(String duration) {
     if (duration.isEmpty) return 0;
@@ -128,7 +112,6 @@ class MusicService {
     return int.tryParse(duration) ?? 0;
   }
 
-  // ===== DEDUPLICATION =====
   List<Song> _deduplicate(List<Song> songs) {
     final seen = <String>{};
     final result = <Song>[];
@@ -141,27 +124,22 @@ class MusicService {
     return result;
   }
 
-  // ===== CACHE =====
   void _cacheResult(String query, List<Song> songs) {
     if (_searchCache.length >= _maxCacheEntries) {
       _searchCache.remove(_searchCache.keys.first);
     }
-    _searchCache[query] = _CacheEntry(songs, DateTime.now());
+    _searchCache[query] = _MusicCacheEntry(songs, DateTime.now());
   }
 
-  // ===== SMART SEARCH WITH PARALLEL FALLBACK =====
   Future<List<Song>> smartSearch(String query) async {
-    // Check cache
     final cache = _searchCache[query];
     if (cache != null && !cache.isExpired && cache.songs.isNotEmpty) {
       return cache.songs;
     }
 
-    // Try parallel primary search
     final allSongs = <Song>[];
     try {
       final results = await rawSearch(query, source: 'all').timeout(const Duration(seconds: 8));
-
       if (results['success'] == true) {
         final resultMap = results['results'] as Map<String, dynamic>? ?? {};
         for (final src in _searchSources) {
@@ -173,11 +151,8 @@ class MusicService {
           allSongs.addAll(songs);
         }
       }
-    } catch (_) {
-      // Primary search failed, proceed to fallback
-    }
+    } catch (_) {}
 
-    // If no results, try parallel per-source fallback
     if (allSongs.isEmpty) {
       final fallbackFutures = _searchSources.map((src) async {
         try {
@@ -199,15 +174,12 @@ class MusicService {
       }
     }
 
-    // Sort by quality score (descending)
     final uniqueSongs = _deduplicate(allSongs);
     uniqueSongs.sort((a, b) => _qualityScore(b).compareTo(_qualityScore(a)));
-
     _cacheResult(query, uniqueSongs);
     return uniqueSongs;
   }
 
-  // ===== PUBLIC SEARCH =====
   Future<List<Song>> searchSongs(String query, {String source = 'all'}) async {
     if (source == 'all') return smartSearch(query);
     final res = await searchSource(source, query);
