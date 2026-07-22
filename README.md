@@ -55,13 +55,13 @@ Riwayat pemutaran otomatis, rekomendasi personal, dan saran pencarian cerdas.
 ### Untuk Oppo A58 / Device Modern (arm64-v8a)
 | Tautan | Ukuran |
 |--------|--------|
-| [⬇️ Download MUSIKA v1.1.2](https://github.com/akaanakbaik/musika-apk/releases/download/v1.1.2/app-arm64-v8a-release.apk) | ~14 MB |
+| [⬇️ Download MUSIKA v1.1.1](https://github.com/akaanakbaik/musika-apk/releases/download/v1.1.1/app-arm64-v8a-release.apk) | ~14 MB |
 | [Lihat Semua Rilis](https://github.com/akaanakbaik/musika-apk/releases) | - |
 
 ### Untuk Device Lawas (armeabi-v7a)
 | Tautan | Ukuran |
 |--------|--------|
-| [⬇️ Download v1.1.2 (32-bit)](https://github.com/akaanakbaik/musika-apk/releases/download/v1.1.2/app-armeabi-v7a-release.apk) | ~11 MB |
+| [⬇️ Download v1.1.1 (32-bit)](https://github.com/akaanakbaik/musika-apk/releases/download/v1.1.1/app-armeabi-v7a-release.apk) | ~11 MB |
 
 ### Panduan Install
 1. Download file `.apk` yang sesuai dengan device kamu
@@ -114,8 +114,8 @@ Riwayat pemutaran otomatis, rekomendasi personal, dan saran pencarian cerdas.
 
 | Versi | Tanggal | Fitur Baru |
 |-------|---------|------------|
-| **v1.1.2** (Latest 🆕) | 23 Jul 2026 | • 7 fitur baru: Sleep Timer, Queue Screen, Artist Screen, Lyrics, Quick Settings, Stats, Share • Download offline ke storage • AI typing animation + Markdown • Search optimization + debounce |
-| **v1.0.2** | 21 Jul 2026 | • UI Bahasa Indonesia • Loading shimmer animasi • Fallback rekomendasi • Izin lengkap • Nama MUSIKA • Matrix CI build |
+| **v1.1.1** (Latest 🆕) | 23 Jul 2026 | • 7 fitur baru: Sleep Timer, Queue Screen, Artist Screen, Lyrics, Quick Settings, Stats, Share • Download offline ke storage • AI typing animation + Markdown • Search optimization + debounce + CI auto-release pipeline |
+| **v1.0.2** | 21 Jul 2026 | • UI Bahasa Indonesia • Loading shimmer animasi • Fallback rekomendasi • Izin lengkap • Nama MUSIKA • CI Matrix build |
 | **v1.0.1** | 19 Jul 2026 | • Fix widget tests • Flutter analyze bersih |
 | **v1.0.0** | 19 Jul 2026 | • Rilis perdana • Search multi-source • Play music • Auth OTP |
 
@@ -148,7 +148,7 @@ flutter build apk --release --target-platform android-arm64
 
 ## 📝 Catatan Rilis
 
-### v1.1.2 (23 Juli 2026)
+### v1.1.1 (23 Juli 2026)
 - **⏰ Sleep Timer**: Auto-stop pemutaran (15/30/45/60 menit), integrasi quick settings
 - **📋 Queue Screen**: Manajemen antrian dengan reorder, shuffle, repeat, clear
 - **🎤 Artist Screen**: Lihat semua lagu dari artis tertentu
@@ -158,7 +158,8 @@ flutter build apk --release --target-platform android-arm64
 - **🔗 Share Song**: Bagikan lagu via clipboard (info + link + aplikasi)
 - **💾 Download Offline**: Simpan lagu ke storage, dukungan offline penuh
 - **💬 AI Typing Animation**: Efek mengetik smooth + format markdown pada respon AI
-- **🔍 Search Optimization**: Debounce, cache scoring, pararel fallback
+- **🔍 Search Optimization**: Debounce, cache scoring, paralel fallback
+- **🤖 CI Auto-Release Pipeline**: Build & rilis otomatis via GitHub Actions
 
 ---
 
