@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/ai_service.dart';
 import '../config/theme.dart';
+import '../widgets/markdown_text.dart';
 
 class AIChatScreen extends StatefulWidget {
   const AIChatScreen({super.key});
@@ -14,16 +15,20 @@ class _AIChatScreenState extends State<AIChatScreen> {
   final AiService _aiService = AiService();
   final TextEditingController _inputCtrl = TextEditingController();
   final ScrollController _scrollCtrl = ScrollController();
-  final List<ChatMessage> _messages = [];
+  final List<_ChatMessage> _messages = [];
   bool _loading = false;
+  bool _isAiTyping = false;
 
   @override
   void initState() {
     super.initState();
-    _messages.add(ChatMessage(
-      text: 'Halo! Saya Musika AI, asisten musik pribadimu. 🎵\n\nTanya apa aja tentang musik, rekomendasi lagu, atau cara pakai fitur Musika!',
+    final welcome = _ChatMessage(
+      text: 'Halo! Saya **Musika AI**, asisten musik pribadimu.\n\nTanya apa aja tentang musik, rekomendasi lagu, atau cara pakai fitur Musika!',
       isUser: false,
-    ));
+      timestamp: DateTime.now(),
+      isTyping: false,
+    );
+    _messages.add(welcome);
   }
 
   @override
@@ -38,7 +43,12 @@ class _AIChatScreenState extends State<AIChatScreen> {
     if (text.isEmpty || _loading) return;
 
     setState(() {
-      _messages.add(ChatMessage(text: text, isUser: true));
+      _messages.add(_ChatMessage(
+        text: text,
+        isUser: true,
+        timestamp: DateTime.now(),
+        isTyping: false,
+      ));
       _loading = true;
     });
     _inputCtrl.clear();
@@ -46,39 +56,72 @@ class _AIChatScreenState extends State<AIChatScreen> {
 
     try {
       final res = await _aiService.chat(text);
-      final reply = res['reply']?.toString() ?? res['message']?.toString() ?? 'Maaf, aku tidak bisa menjawab saat ini. Coba lagi ya! 🙏';
+      final reply = res['reply']?.toString() ??
+          res['message']?.toString() ??
+          'Maaf, aku tidak bisa menjawab saat ini. Coba lagi ya!';
       if (mounted) {
-        setState(() => _messages.add(ChatMessage(text: reply, isUser: false)));
+        setState(() {
+          _messages.add(_ChatMessage(
+            text: reply,
+            isUser: false,
+            timestamp: DateTime.now(),
+            isTyping: true,
+          ));
+          _loading = false;
+          _isAiTyping = true;
+        });
+        _scrollToBottom();
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _messages.add(ChatMessage(
-          text: 'Maaf, terjadi kesalahan. Coba lagi nanti ya! 🙏',
-          isUser: false,
-        )));
+        setState(() {
+          _messages.add(_ChatMessage(
+            text: 'Maaf, terjadi kesalahan. Coba lagi nanti ya!',
+            isUser: false,
+            timestamp: DateTime.now(),
+            isTyping: true,
+          ));
+          _loading = false;
+          _isAiTyping = true;
+        });
       }
-    } finally {
-      if (mounted) setState(() => _loading = false);
-      _scrollToBottom();
     }
+  }
+
+  void _onTypingComplete(int index) {
+    if (!mounted) return;
+    setState(() {
+      if (index < _messages.length) {
+        _messages[index] = _ChatMessage(
+          text: _messages[index].text,
+          isUser: _messages[index].isUser,
+          timestamp: _messages[index].timestamp,
+          isTyping: false,
+        );
+      }
+      _isAiTyping = false;
+    });
+    _scrollToBottom();
   }
 
   void _clearChat() {
     setState(() {
       _messages.clear();
-      _messages.add(ChatMessage(
-        text: 'Percakapan dibersihkan! Ada yang bisa aku bantu? 😊🎵',
+      _messages.add(_ChatMessage(
+        text: 'Percakapan dibersihkan! Ada yang bisa aku bantu?',
         isUser: false,
+        timestamp: DateTime.now(),
+        isTyping: false,
       ));
     });
   }
 
   void _scrollToBottom() {
-    Future.delayed(const Duration(milliseconds: 100), () {
+    Future.delayed(const Duration(milliseconds: 50), () {
       if (_scrollCtrl.hasClients) {
         _scrollCtrl.animateTo(
           _scrollCtrl.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
+          duration: const Duration(milliseconds: 200),
           curve: Curves.easeOut,
         );
       }
@@ -123,7 +166,6 @@ class _AIChatScreenState extends State<AIChatScreen> {
       ),
       body: Column(
         children: [
-          // Messages
           Expanded(
             child: _messages.isEmpty
                 ? Center(
@@ -139,70 +181,72 @@ class _AIChatScreenState extends State<AIChatScreen> {
                 : ListView.builder(
                     controller: _scrollCtrl,
                     padding: const EdgeInsets.all(16),
-                    itemCount: _messages.length + (_loading ? 1 : 0),
+                    itemCount: _messages.length + (_loading && !_isAiTyping ? 1 : 0),
                     itemBuilder: (_, i) {
-                      if (_loading && i == _messages.length) {
+                      if (_loading && !_isAiTyping && i == _messages.length) {
                         return _buildLoadingBubble(isDark);
                       }
-                      return _buildMessageBubble(_messages[i], isDark);
+                      return _buildMessageBubble(_messages[i], i, isDark);
                     },
                   ),
           ),
+          _buildInputArea(isDark),
+        ],
+      ),
+    );
+  }
 
-          // Input Area
-          Container(
-            padding: EdgeInsets.only(
-              left: 12, right: 8,
-              bottom: MediaQuery.of(context).padding.bottom + 8,
-              top: 8,
-            ),
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
-              border: Border(
-                top: BorderSide(color: isDark ? Colors.white10 : Colors.black12),
+  Widget _buildInputArea(bool isDark) {
+    return Container(
+      padding: EdgeInsets.only(
+        left: 12, right: 8,
+        bottom: MediaQuery.of(context).padding.bottom + 8,
+        top: 8,
+      ),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
+        border: Border(
+          top: BorderSide(color: isDark ? Colors.white10 : Colors.black12),
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: _inputCtrl,
+              decoration: InputDecoration(
+                hintText: 'Tanya tentang musik...',
+                hintStyle: TextStyle(color: Colors.grey[500], fontSize: 14),
+                filled: true,
+                fillColor: isDark ? const Color(0xFF282828) : const Color(0xFFF0F0F0),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               ),
+              textInputAction: TextInputAction.send,
+              onSubmitted: (_) => _sendMessage(),
+              maxLines: 4,
+              minLines: 1,
             ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _inputCtrl,
-                    decoration: InputDecoration(
-                      hintText: 'Tanya tentang musik...',
-                      hintStyle: TextStyle(color: Colors.grey[500], fontSize: 14),
-                      filled: true,
-                      fillColor: isDark ? const Color(0xFF282828) : const Color(0xFFF0F0F0),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(24),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                    ),
-                    textInputAction: TextInputAction.send,
-                    onSubmitted: (_) => _sendMessage(),
-                    maxLines: 4,
-                    minLines: 1,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [AppTheme.primary, AppTheme.primary.withValues(alpha: 0.8)],
-                    ),
-                    shape: BoxShape.circle,
-                  ),
-                  child: IconButton(
-                    icon: _loading
-                        ? const SizedBox(
-                            width: 20, height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
-                          )
-                        : const Icon(Icons.send, color: Colors.black, size: 22),
-                    onPressed: _loading ? null : _sendMessage,
-                  ),
-                ),
-              ],
+          ),
+          const SizedBox(width: 8),
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [AppTheme.primary, AppTheme.primary.withValues(alpha: 0.8)],
+              ),
+              shape: BoxShape.circle,
+            ),
+            child: IconButton(
+              icon: _loading
+                  ? const SizedBox(
+                      width: 20, height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+                    )
+                  : const Icon(Icons.send, color: Colors.black, size: 22),
+              onPressed: _loading ? null : _sendMessage,
             ),
           ),
         ],
@@ -210,7 +254,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
     );
   }
 
-  Widget _buildMessageBubble(ChatMessage msg, bool isDark) {
+  Widget _buildMessageBubble(_ChatMessage msg, int index, bool isDark) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Column(
@@ -253,25 +297,37 @@ class _AIChatScreenState extends State<AIChatScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        msg.text,
-                        style: TextStyle(
+                      if (msg.isUser)
+                        Text(
+                          msg.text,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: msg.isUser ? Colors.black : (isDark ? Colors.white : const Color(0xFF121212)),
+                            height: 1.5,
+                          ),
+                        )
+                      else if (msg.isTyping)
+                        TypingText(
+                          fullText: msg.text,
                           fontSize: 14,
-                          color: msg.isUser ? Colors.black : (isDark ? Colors.white : const Color(0xFF121212)),
-                          height: 1.5,
+                          color: isDark ? Colors.white : const Color(0xFF121212),
+                          onComplete: () => _onTypingComplete(index),
+                        )
+                      else
+                        MarkdownText(
+                          text: msg.text,
+                          fontSize: 14,
+                          color: isDark ? Colors.white : null,
                         ),
-                      ),
                       const SizedBox(height: 8),
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            _timeString(),
+                            _formatTime(msg.timestamp),
                             style: TextStyle(
                               fontSize: 10,
-                              color: msg.isUser
-                                  ? Colors.black54
-                                  : Colors.grey[500],
+                              color: msg.isUser ? Colors.black54 : Colors.grey[500],
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -338,10 +394,8 @@ class _AIChatScreenState extends State<AIChatScreen> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _dot(isDark),
-                const SizedBox(width: 4),
-                _dot(isDark),
-                const SizedBox(width: 4),
+                _dot(isDark), const SizedBox(width: 4),
+                _dot(isDark), const SizedBox(width: 4),
                 _dot(isDark),
               ],
             ),
@@ -351,24 +405,28 @@ class _AIChatScreenState extends State<AIChatScreen> {
     );
   }
 
-  Widget _dot(bool isDark) {
-    return Container(
-      width: 8, height: 8,
-      decoration: BoxDecoration(
-        color: isDark ? Colors.grey[500] : Colors.grey[400],
-        shape: BoxShape.circle,
-      ),
-    );
-  }
+  Widget _dot(bool isDark) => Container(
+    width: 8, height: 8,
+    decoration: BoxDecoration(
+      color: isDark ? Colors.grey[500] : Colors.grey[400],
+      shape: BoxShape.circle,
+    ),
+  );
 
-  String _timeString() {
-    final now = DateTime.now();
-    return '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+  String _formatTime(DateTime dt) {
+    return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
   }
 }
 
-class ChatMessage {
+class _ChatMessage {
   final String text;
   final bool isUser;
-  ChatMessage({required this.text, required this.isUser});
+  final DateTime timestamp;
+  final bool isTyping;
+  _ChatMessage({
+    required this.text,
+    required this.isUser,
+    required this.timestamp,
+    required this.isTyping,
+  });
 }
