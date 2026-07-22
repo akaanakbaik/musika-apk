@@ -92,11 +92,11 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Clear All Favorites'),
-        content: const Text('Remove all songs from favorites?'),
+        title: const Text('Hapus Semua Favorit'),
+        content: const Text('Hapus semua lagu dari favorit?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Clear All', style: TextStyle(color: Colors.redAccent))),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Batal')),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Hapus Semua', style: TextStyle(color: Colors.redAccent))),
         ],
       ),
     );
@@ -115,11 +115,11 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
       builder: (_) => SafeArea(
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          const Padding(padding: EdgeInsets.all(16), child: Text('Sort By', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
+          const Padding(padding: EdgeInsets.all(16), child: Text('Urutkan', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
           const Divider(height: 1),
-          ListTile(title: const Text('Date Added'), trailing: _sortBy == 'date' ? const Icon(Icons.check, color: AppTheme.primary) : null, onTap: () { setState(() => _sortBy = 'date'); _applySort(); Navigator.pop(context); }),
-          ListTile(title: const Text('Title'), trailing: _sortBy == 'title' ? const Icon(Icons.check, color: AppTheme.primary) : null, onTap: () { setState(() => _sortBy = 'title'); _applySort(); Navigator.pop(context); }),
-          ListTile(title: const Text('Artist'), trailing: _sortBy == 'artist' ? const Icon(Icons.check, color: AppTheme.primary) : null, onTap: () { setState(() => _sortBy = 'artist'); _applySort(); Navigator.pop(context); }),
+          ListTile(title: const Text('Tanggal Ditambahkan'), trailing: _sortBy == 'date' ? const Icon(Icons.check, color: AppTheme.primary) : null, onTap: () { setState(() => _sortBy = 'date'); _applySort(); Navigator.pop(context); }),
+          ListTile(title: const Text('Judul'), trailing: _sortBy == 'title' ? const Icon(Icons.check, color: AppTheme.primary) : null, onTap: () { setState(() => _sortBy = 'title'); _applySort(); Navigator.pop(context); }),
+          ListTile(title: const Text('Artis'), trailing: _sortBy == 'artist' ? const Icon(Icons.check, color: AppTheme.primary) : null, onTap: () { setState(() => _sortBy = 'artist'); _applySort(); Navigator.pop(context); }),
           const SizedBox(height: 16),
         ]),
       ),
@@ -133,18 +133,18 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
 
     if (!auth.isAuthenticated) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Favorites')),
+        appBar: AppBar(title: const Text('Favorit')),
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(Icons.favorite_border, size: 64, color: Colors.grey[600]),
               const SizedBox(height: 16),
-              Text('Sign in to see your favorites', style: TextStyle(color: Colors.grey[400])),
+              Text('Masuk untuk melihat favorit', style: TextStyle(color: Colors.grey[400])),
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AuthScreen())),
-                child: const Text('Sign In'),
+                child: const Text('Masuk'),
               ),
             ],
           ),
@@ -154,7 +154,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Favorites'),
+        title: const Text('Favorit'),
         actions: [
           if (_favorites.isNotEmpty) ...[
             IconButton(icon: const Icon(Icons.sort), onPressed: _showSortOptions, tooltip: 'Sort'),
@@ -170,7 +170,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               child: TextField(
                 controller: _searchCtrl,
                 decoration: InputDecoration(
-                  hintText: 'Search favorites...',
+                  hintText: 'Cari favorit...',
                   prefixIcon: const Icon(Icons.search, size: 20),
                   suffixIcon: _searchCtrl.text.isNotEmpty
                       ? IconButton(icon: const Icon(Icons.clear, size: 18), onPressed: () { _searchCtrl.clear(); })

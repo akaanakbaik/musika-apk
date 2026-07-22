@@ -42,17 +42,17 @@ class _PlaylistsScreenState extends State<PlaylistsScreen> {
     final name = await showDialog<String>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('New Playlist'),
+        title: const Text('Playlist Baru'),
         content: TextField(
           controller: nameController,
-          decoration: const InputDecoration(hintText: 'Playlist name'),
+          decoration: const InputDecoration(hintText: 'Nama playlist'),
           autofocus: true,
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Batal')),
           TextButton(
             onPressed: () => Navigator.pop(context, nameController.text.trim()),
-            child: const Text('Create'),
+            child: const Text('Buat'),
           ),
         ],
       ),
@@ -69,18 +69,18 @@ class _PlaylistsScreenState extends State<PlaylistsScreen> {
 
     if (!auth.isAuthenticated) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Playlists')),
+        appBar: AppBar(title: const Text('Playlist')),
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Icon(Icons.queue_music, size: 64, color: Colors.white24),
               const SizedBox(height: 16),
-              Text('Sign in to create playlists', style: TextStyle(color: Colors.grey[400])),
+              Text('Masuk untuk membuat playlist', style: TextStyle(color: Colors.grey[400])),
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AuthScreen())),
-                child: const Text('Sign In'),
+                child: const Text('Masuk'),
               ),
             ],
           ),
@@ -90,7 +90,7 @@ class _PlaylistsScreenState extends State<PlaylistsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Playlists'),
+        title: const Text('Playlist'),
         actions: [
           IconButton(icon: const Icon(Icons.add), onPressed: _create),
         ],
@@ -106,9 +106,9 @@ class _PlaylistsScreenState extends State<PlaylistsScreen> {
                       children: [
                         const Icon(Icons.queue_music, size: 64, color: Colors.white24),
                         const SizedBox(height: 16),
-                        Text('No playlists yet', style: TextStyle(color: Colors.grey[400])),
+                        Text('Belum ada playlist', style: TextStyle(color: Colors.grey[400])),
                         const SizedBox(height: 8),
-                        Text('Tap + to create one', style: TextStyle(fontSize: 13, color: Colors.grey[600])),
+                        Text('Ketuk + untuk membuat', style: TextStyle(fontSize: 13, color: Colors.grey[600])),
                       ],
                     ),
                   )
