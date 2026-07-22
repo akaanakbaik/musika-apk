@@ -189,12 +189,11 @@ class _DurationOption extends StatelessWidget {
       ),      onTap: () {
                 final timer = context.read<SleepTimerNotifier>();
                 final player = context.read<PlayerProvider>();
-                final startId = DateTime.now().millisecondsSinceEpoch;
                 timer.start(minutes);
                 Navigator.pop(context);
-                // Schedule delayed stop only (not immediate)
+                // Schedule delayed stop after duration
                 Future.delayed(Duration(minutes: minutes), () {
-                  if (timer.active && timer.totalMinutes == minutes) {
+                  if (timer.active && timer.totalMinutes >= minutes) {
                     player.stop();
                     timer.cancel();
                   }
