@@ -396,6 +396,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                     : () async {
                         setSheetState(() => sending = true);
                         final res = await authSvc.forgotPassword(emailCtrl.text.trim());
+                        if (!ctx.mounted) return;
                         Navigator.pop(ctx);
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(

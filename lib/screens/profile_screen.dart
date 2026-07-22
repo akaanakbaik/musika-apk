@@ -328,6 +328,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           'username': nameCtrl.text.trim(),
                           'bio': bioCtrl.text.trim(),
                         });
+                        if (!ctx.mounted) return;
                         setSheetState(() => saving = false);
                         Navigator.pop(ctx);
                         if (context.mounted) {

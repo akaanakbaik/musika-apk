@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/settings_provider.dart';
 import '../config/theme.dart';
-import 'auth_screen.dart';
 import 'profile_screen.dart';
 
 class SettingsScreen extends StatefulWidget {

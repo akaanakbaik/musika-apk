@@ -44,7 +44,7 @@ class _SearchScreenState extends State<SearchScreen> {
   void _onSearchChanged(String query) {
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 500), () {
-      if (query.trim().isNotEmpty) _search(query);
+      if (query.trim().isNotEmpty) { _search(query); }
     });
   }
 

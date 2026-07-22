@@ -34,14 +34,12 @@ void main() {
     testWidgets('renders with providers without crash', (tester) async {
       await tester.pumpWidget(createTestApp());
       await tester.pump();
-      // Should not crash, even if still loading
       expect(find.byType(HomeScreen), findsOneWidget);
     });
 
     testWidgets('shows shimmer while loading', (tester) async {
       await tester.pumpWidget(createTestApp());
       await tester.pump();
-      // Immediately after init, loading state is active
       expect(find.byType(HomeScreen), findsOneWidget);
     });
   });
@@ -55,12 +53,11 @@ void main() {
         ),
       ));
       await tester.pump();
-
       expect(find.byType(TextField), findsOneWidget);
-      expect(find.text('Search songs, artists...'), findsOneWidget);
+      expect(find.text('Cari lagu, artis, atau genre...'), findsOneWidget);
     });
 
-    testWidgets('shows quick suggestions', (tester) async {
+    testWidgets('shows trending searches', (tester) async {
       await tester.pumpWidget(MaterialApp(
         home: ChangeNotifierProvider.value(
           value: PlayerProvider(),
@@ -68,15 +65,15 @@ void main() {
         ),
       ));
       await tester.pump();
-
-      expect(find.text('Quick Suggestions'), findsOneWidget);
-      expect(find.text('Trending'), findsOneWidget);
-      expect(find.text('New Releases'), findsOneWidget);
+      // Indonesian UI: "Pencarian Populer" and chip labels
+      expect(find.text('Pencarian Populer'), findsOneWidget);
+      expect(find.text('top hits 2026'), findsOneWidget);
+      expect(find.text('musik Indonesia terbaru'), findsOneWidget);
     });
   });
 
   group('ProfileScreen', () {
-    testWidgets('shows sign in button for guest', (tester) async {
+    testWidgets('shows masuk button for guest', (tester) async {
       final settings = SettingsProvider();
       final auth = AuthProvider();
 
@@ -90,12 +87,11 @@ void main() {
         ),
       ));
       await tester.pump();
-
-      // "Sign In" appears as ElevatedButton text
-      expect(find.text('Sign in to see your profile'), findsOneWidget);
+      // Indonesian UI guest text
+      expect(find.text('Masuk untuk Fitur Lengkap'), findsOneWidget);
     });
 
-    testWidgets('renders section headers (with scroll)', (tester) async {
+    testWidgets('renders settings screen section headers', (tester) async {
       final settings = SettingsProvider();
       final auth = AuthProvider();
 
@@ -111,24 +107,27 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      // First section header is visible without scroll
-      expect(find.text('Playback'), findsOneWidget);
+      // Navigate to Settings screen
+      await tester.tap(find.byTooltip('Pengaturan'));
+      await tester.pump();
+      await tester.pump();
 
-      // Scroll down to find 'Display' section (ListView lazy rendering)
-      await tester.scrollUntilVisible(
-        find.text('Display'),
-        200.0, // scroll increment
-        scrollable: find.byType(Scrollable).first,
-      );
-      expect(find.text('Display'), findsOneWidget);
+      // Check Indonesian settings section headers
+      expect(find.text('Pemutaran'), findsOneWidget);
 
-      // Scroll down more to find 'About'
       await tester.scrollUntilVisible(
-        find.text('About'),
+        find.text('Tampilan'),
         200.0,
         scrollable: find.byType(Scrollable).first,
       );
-      expect(find.text('About'), findsOneWidget);
+      expect(find.text('Tampilan'), findsOneWidget);
+
+      await tester.scrollUntilVisible(
+        find.text('Tentang'),
+        200.0,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.text('Tentang'), findsOneWidget);
     });
   });
 
@@ -143,10 +142,9 @@ void main() {
         ),
       ));
       await tester.pump();
-
-      // AuthScreen has tabs "Sign In" and "Register", plus TextFields
+      // Indonesian UI: Masuk (login) and Daftar (register) tabs
       expect(find.byType(TextField), findsWidgets);
-      expect(find.text('Register'), findsOneWidget);
+      expect(find.text('Daftar'), findsOneWidget);
     });
   });
 
