@@ -40,6 +40,7 @@ class PlayerProvider extends ChangeNotifier {
   bool get hasNext => _currentIndex < queue.length - 1 || _repeatMode == RepeatMode.all;
   bool get hasPrevious => _currentIndex > 0 || _repeatMode == RepeatMode.all;
   int get queueLength => queue.length;
+  int get playHistoryLength => _playHistory.length;
 
   void toggleShuffle() {
     final current = _currentSong;

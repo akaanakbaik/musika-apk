@@ -1,13 +1,21 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../providers/auth_provider.dart';
+import '../providers/player_provider.dart';
 import '../services/cdn_service.dart';
 import '../config/theme.dart';
+import '../widgets/stats_card.dart';
+import '../widgets/quick_settings.dart';
+import '../widgets/sleep_timer.dart';
 import 'auth_screen.dart';
 import 'settings_screen.dart';
+import 'queue_screen.dart';
+import 'downloads_screen.dart';
+import 'history_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -27,6 +35,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
         title: const Text('Profil'),
         centerTitle: true,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.dashboard_customize_outlined),
+            tooltip: 'Pengaturan Cepat',
+            onPressed: () => showModalBottomSheet(
+              context: context,
+              backgroundColor: Colors.transparent,
+              builder: (_) => const QuickSettingsPanel(),
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.settings_outlined),
             tooltip: 'Pengaturan',
@@ -126,38 +143,43 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Text(
                 user.bio!,
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.grey[400],
-                  fontStyle: FontStyle.italic,
-                ),
+                style: TextStyle(fontSize: 13, color: Colors.grey[400], fontStyle: FontStyle.italic),
               ),
             ),
           ],
-
           const SizedBox(height: 24),
 
-          // Stats Row
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 20),
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: isDark ? Colors.white10 : Colors.black12),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _StatItem(icon: Icons.favorite, label: 'Favorit', value: '0'),
-                Container(width: 1, height: 32, color: isDark ? Colors.white10 : Colors.black12),
-                _StatItem(icon: Icons.queue_music, label: 'Playlist', value: '0'),
-                Container(width: 1, height: 32, color: isDark ? Colors.white10 : Colors.black12),
-                _StatItem(icon: Icons.download, label: 'Unduhan', value: '0'),
-              ],
-            ),
+          // Stats Card (Feature 1: Listening Stats)
+          const StatsCard(),
+          const SizedBox(height: 24),
+
+          // Sleep Timer Indicator
+          Consumer<SleepTimerNotifier>(
+            builder: (_, timer, __) => timer.active
+                ? Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primary.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppTheme.primary.withValues(alpha: 0.2)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.timer, color: AppTheme.primary, size: 20),
+                        const SizedBox(width: 10),
+                        Text('Timer tidur aktif: ${timer.remainingFormatted}',
+                          style: const TextStyle(color: AppTheme.primary, fontWeight: FontWeight.w600, fontSize: 13)),
+                        const Spacer(),
+                        TextButton(
+                          onPressed: () => timer.cancel(),
+                          child: const Text('Matikan', style: TextStyle(color: Colors.redAccent, fontSize: 12)),
+                        ),
+                      ],
+                    ),
+                  )
+                : const SizedBox.shrink(),
           ),
-
-          const SizedBox(height: 24),
 
           // Menu Items
           _MenuButton(
@@ -167,13 +189,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
             onTap: () => _editProfile(context, auth),
           ),
           _MenuButton(
-            icon: Icons.settings_outlined,
-            title: 'Pengaturan',
-            subtitle: 'Kualitas audio, tampilan, dan lainnya',
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const SettingsScreen()),
-            ),
+            icon: Icons.queue_music_outlined,
+            title: 'Antrian',
+            subtitle: 'Kelola dan urutkan antrian lagu',
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const QueueScreen())),
+          ),
+          _MenuButton(
+            icon: Icons.download_outlined,
+            title: 'Unduhan',
+            subtitle: 'Lagu offline tersimpan',
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DownloadsScreen())),
+          ),
+          _MenuButton(
+            icon: Icons.history,
+            title: 'Riwayat',
+            subtitle: 'Lagu yang pernah diputar',
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HistoryScreen())),
+          ),
+          _MenuButton(
+            icon: Icons.share,
+            title: 'Bagikan Aplikasi',
+            subtitle: 'Rekomendasikan Musika ke teman',
+            onTap: () {
+              Clipboard.setData(const ClipboardData(text: 'https://github.com/akaanakbaik/musika-apk'));
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Link Musika disalin!'), duration: Duration(seconds: 1), behavior: SnackBarBehavior.floating),
+              );
+            },
           ),
           _MenuButton(
             icon: Icons.info_outline,
@@ -220,37 +262,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: const Icon(Icons.person_outline, size: 44, color: AppTheme.primary),
             ),
             const SizedBox(height: 24),
-            const Text(
-              'Masuk untuk Fitur Lengkap',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
+            const Text('Masuk untuk Fitur Lengkap', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            Text(
-              'Sinkron playlist, favorit, dan riwayat di semua perangkat',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, color: Colors.grey[400]),
-            ),
+            Text('Sinkron playlist, favorit, dan riwayat di semua perangkat',
+              textAlign: TextAlign.center, style: TextStyle(fontSize: 14, color: Colors.grey[400])),
             const SizedBox(height: 32),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const AuthScreen()),
-                ),
+                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AuthScreen())),
                 icon: const Icon(Icons.login, size: 20),
                 label: const Text('Masuk / Daftar'),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                ),
+                style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
               ),
             ),
             const SizedBox(height: 16),
             TextButton(
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const SettingsScreen()),
-              ),
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen())),
               child: const Text('Jelajahi Pengaturan'),
             ),
           ],
@@ -262,9 +290,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _changeAvatar(BuildContext context, AuthProvider auth) async {
     try {
       var status = await Permission.photos.request();
-      if (!status.isGranted) {
-        status = await Permission.storage.request();
-      }
+      if (!status.isGranted) status = await Permission.storage.request();
       if (!status.isGranted) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -273,30 +299,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
         }
         return;
       }
-
       final picker = ImagePicker();
-      final XFile? image = await picker.pickImage(
-        source: ImageSource.gallery,
-        maxWidth: 512,
-        maxHeight: 512,
-        imageQuality: 80,
-      );
-
+      final XFile? image = await picker.pickImage(source: ImageSource.gallery, maxWidth: 512, maxHeight: 512, imageQuality: 80);
       if (image == null || !context.mounted) return;
-
-      showDialog(context: context, barrierDismissible: false,
-        builder: (_) => const Center(child: CircularProgressIndicator()),
-      );
-
+      showDialog(context: context, barrierDismissible: false, builder: (_) => const Center(child: CircularProgressIndicator()));
       try {
         final file = File(image.path);
         final cdn = CdnService();
         final cdnUrl = await cdn.uploadImage(file, prefix: 'avatar_${auth.user!.id}');
-
         if (context.mounted) Navigator.pop(context);
-
         await auth.updateProfile({'avatar_url': cdnUrl});
-
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Foto profil berhasil diperbarui!'), behavior: SnackBarBehavior.floating),
@@ -306,16 +318,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
         if (context.mounted) Navigator.pop(context);
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Gagal upload: ${e.toString().length > 60 ? e.toString().substring(0, 60) : e.toString()}'),
-                behavior: SnackBarBehavior.floating),
+            SnackBar(content: Text('Gagal upload: ${e.toString().length > 60 ? e.toString().substring(0, 60) : e.toString()}'), behavior: SnackBarBehavior.floating),
           );
         }
       }
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.toString().length > 60 ? e.toString().substring(0, 60) : e.toString()}'),
-              behavior: SnackBarBehavior.floating),
+          SnackBar(content: Text('Error: ${e.toString().length > 60 ? e.toString().substring(0, 60) : e.toString()}'), behavior: SnackBarBehavior.floating),
         );
       }
     }
@@ -326,92 +336,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final bioCtrl = TextEditingController(text: auth.user!.bio ?? '');
     final isDark = Theme.of(context).brightness == Brightness.dark;
     bool saving = false;
-
     showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
+      context: context, isScrollControlled: true,
       backgroundColor: isDark ? const Color(0xFF1e1e1e) : Colors.white,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setSheetState) => Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(ctx).viewInsets.bottom,
-            left: 20, right: 20, top: 20,
-          ),
+          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom, left: 20, right: 20, top: 20),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Container(
-              width: 40, height: 4,
-              decoration: BoxDecoration(
-                color: isDark ? Colors.white24 : Colors.black26,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
+            Container(width: 40, height: 4, decoration: BoxDecoration(color: isDark ? Colors.white24 : Colors.black26, borderRadius: BorderRadius.circular(2))),
             const SizedBox(height: 20),
             const Text('Edit Profil', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             const SizedBox(height: 24),
-            TextField(
-              controller: nameCtrl,
-              decoration: InputDecoration(
-                labelText: 'Nama Tampilan',
-                prefixIcon: const Icon(Icons.person_outline),
-                filled: true,
-                fillColor: isDark ? const Color(0xFF282828) : const Color(0xFFF0F0F0),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-            ),
+            TextField(controller: nameCtrl, decoration: InputDecoration(labelText: 'Nama Tampilan', prefixIcon: const Icon(Icons.person_outline), filled: true, fillColor: isDark ? const Color(0xFF282828) : const Color(0xFFF0F0F0), border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none))),
             const SizedBox(height: 16),
-            TextField(
-              controller: bioCtrl,
-              maxLines: 3,
-              decoration: InputDecoration(
-                labelText: 'Bio',
-                prefixIcon: const Padding(
-                  padding: EdgeInsets.only(bottom: 48),
-                  child: Icon(Icons.description_outlined),
-                ),
-                filled: true,
-                fillColor: isDark ? const Color(0xFF282828) : const Color(0xFFF0F0F0),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-            ),
+            TextField(controller: bioCtrl, maxLines: 3, decoration: InputDecoration(labelText: 'Bio', prefixIcon: const Padding(padding: EdgeInsets.only(bottom: 48), child: Icon(Icons.description_outlined)), filled: true, fillColor: isDark ? const Color(0xFF282828) : const Color(0xFFF0F0F0), border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none))),
             const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: saving
-                    ? null
-                    : () async {
-                        setSheetState(() => saving = true);
-                        await auth.updateProfile({
-                          'username': nameCtrl.text.trim(),
-                          'bio': bioCtrl.text.trim(),
-                        });
-                        if (!ctx.mounted) return;
-                        setSheetState(() => saving = false);
-                        Navigator.pop(ctx);
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Profil berhasil diperbarui!'),
-                              behavior: SnackBarBehavior.floating,
-                            ),
-                          );
-                        }
-                      },
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                ),
-                child: saving
-                    ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
-                    : const Text('Simpan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-              ),
-            ),
+            SizedBox(width: double.infinity, child: ElevatedButton(
+              onPressed: saving ? null : () async {
+                setSheetState(() => saving = true);
+                await auth.updateProfile({'username': nameCtrl.text.trim(), 'bio': bioCtrl.text.trim()});
+                if (!ctx.mounted) return;
+                setSheetState(() => saving = false);
+                Navigator.pop(ctx);
+                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profil berhasil diperbarui!'), behavior: SnackBarBehavior.floating));
+              },
+              style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
+              child: saving ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black)) : const Text('Simpan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+            )),
             const SizedBox(height: 32),
           ]),
         ),
@@ -420,73 +372,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _confirmLogout(BuildContext context, AuthProvider auth) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1e1e1e) : Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            const Icon(Icons.logout, color: Colors.redAccent, size: 24),
-            const SizedBox(width: 8),
-            const Text('Keluar'),
-          ],
-        ),
-        content: const Text('Kamu akan keluar dari akun. Data offline tetap tersimpan.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Batal')),
-          ElevatedButton(
-            onPressed: () {
-              auth.logout();
-              Navigator.pop(context);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.redAccent,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Keluar'),
-          ),
-        ],
-      ),
-    );
+    showDialog(context: context, builder: (_) => AlertDialog(
+      backgroundColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1e1e1e) : Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: const Row(children: [Icon(Icons.logout, color: Colors.redAccent, size: 24), SizedBox(width: 8), Text('Keluar')]),
+      content: const Text('Kamu akan keluar dari akun. Data offline tetap tersimpan.'),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Batal')),
+        ElevatedButton(onPressed: () { auth.logout(); Navigator.pop(context); }, style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, foregroundColor: Colors.white), child: const Text('Keluar')),
+      ],
+    ));
   }
 
   void _showAbout(BuildContext context) {
     showAboutDialog(
-      context: context,
-      applicationName: 'Musika',
-      applicationVersion: AppTheme.appVersion,
-      applicationIcon: Container(
-        width: 48, height: 48,
-        decoration: BoxDecoration(
-          color: AppTheme.primary,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: const Icon(Icons.music_note, color: Colors.black, size: 28),
-      ),
-      children: [
-        const Text('Aplikasi pemutar musik multi-platform. Streaming dari YouTube, Spotify, Apple Music, dan SoundCloud.'),
-      ],
-    );
-  }
-}
-
-class _StatItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-
-  const _StatItem({required this.icon, required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Icon(icon, color: AppTheme.primary, size: 24),
-        const SizedBox(height: 8),
-        Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-        Text(label, style: TextStyle(fontSize: 11, color: Colors.grey[500])),
-      ],
+      context: context, applicationName: 'Musika', applicationVersion: AppTheme.appVersion,
+      applicationIcon: Container(width: 48, height: 48, decoration: BoxDecoration(color: AppTheme.primary, borderRadius: BorderRadius.circular(12)), child: const Icon(Icons.music_note, color: Colors.black, size: 28)),
+      children: [const Text('Aplikasi pemutar musik multi-platform. Streaming dari YouTube, Spotify, Apple Music, dan SoundCloud.')],
     );
   }
 }
@@ -496,13 +398,7 @@ class _MenuButton extends StatelessWidget {
   final String title;
   final String subtitle;
   final VoidCallback onTap;
-
-  const _MenuButton({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
+  const _MenuButton({required this.icon, required this.title, required this.subtitle, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -511,19 +407,9 @@ class _MenuButton extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
       elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: isDark ? Colors.white10 : Colors.black12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: isDark ? Colors.white10 : Colors.black12)),
       child: ListTile(
-        leading: Container(
-          width: 40, height: 40,
-          decoration: BoxDecoration(
-            color: AppTheme.primary.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(icon, color: AppTheme.primary, size: 22),
-        ),
+        leading: Container(width: 40, height: 40, decoration: BoxDecoration(color: AppTheme.primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)), child: Icon(icon, color: AppTheme.primary, size: 22)),
         title: Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
         subtitle: Text(subtitle, style: TextStyle(fontSize: 12, color: Colors.grey[500])),
         trailing: const Icon(Icons.chevron_right, color: Colors.white24, size: 20),

@@ -10,6 +10,7 @@ import 'services/favorites_service.dart';
 import 'services/history_service.dart';
 import 'services/playlists_service.dart';
 import 'services/ai_service.dart';
+import 'widgets/sleep_timer.dart';
 
 class MultiProviderSetup extends StatelessWidget {
   final Widget child;
@@ -23,6 +24,7 @@ class MultiProviderSetup extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => PlayerProvider()),
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
+        ChangeNotifierProvider(create: (_) => SleepTimerNotifier()),
         // Services as providers for dependency injection
         Provider(create: (_) => ApiService()),
         Provider(create: (_) => AuthService()),
