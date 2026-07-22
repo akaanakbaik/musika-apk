@@ -96,6 +96,20 @@ class AuthService {
     return _cachedUser;
   }
 
+  Future<Map<String, dynamic>> forgotPassword(String email) async {
+    return await _api.post('/api/auth/forgot-password', body: {
+      'email': email,
+    }, auth: false);
+  }
+
+  Future<Map<String, dynamic>> resetPassword(String email, String code, String newPassword) async {
+    return await _api.post('/api/auth/reset-password', body: {
+      'email': email,
+      'code': code,
+      'newPassword': newPassword,
+    }, auth: false);
+  }
+
   Future<void> logout() async {
     await _api.setToken(null);
     _cachedUser = null;

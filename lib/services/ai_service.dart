@@ -15,7 +15,7 @@ class AiService {
 
     if (_currentProvider == 'prexzy') {
       final res = await _api.post('/api/ai/chat', body: {
-        'text': message,
+        'message': message,
       }, auth: false);
 
       if (res['success'] == true) {
@@ -35,10 +35,18 @@ class AiService {
       }
 
       _consecutiveFails++;
+      // Direct GET to /api/ai/chat as final fallback
+      try {
+        const getRes = await _api.get('/api/ai/chat', query: {'message': message}, auth: false);
+        if (getRes['success'] == true) {
+          _consecutiveFails = 0;
+          return getRes;
+        }
+      } catch (_) {}
       return res;
     } else {
-      final res = await _api.get('/api/ai/gemini', query: {
-        'prompt': message,
+      final res = await _api.get('/api/ai/chat', query: {
+        'message': message,
       }, auth: false);
 
       if (res['success'] == true) {
@@ -48,7 +56,7 @@ class AiService {
 
       _consecutiveFails++;
       final fallbackRes = await _api.post('/api/ai/chat', body: {
-        'text': message,
+        'message': message,
       }, auth: false);
 
       _consecutiveFails = 0;

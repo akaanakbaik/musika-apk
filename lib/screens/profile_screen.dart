@@ -1,182 +1,200 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
-import '../providers/settings_provider.dart';
 import '../config/theme.dart';
 import 'auth_screen.dart';
+import 'settings_screen.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
   @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
-    final settings = context.watch<SettingsProvider>();
-    final isDark = settings.isDark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Profile')),
-      body: ListView(
+      appBar: AppBar(
+        title: const Text('Profil'),
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: 'Pengaturan',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const SettingsScreen()),
+            ),
+          ),
+        ],
+      ),
+      body: auth.isAuthenticated ? _buildProfile(context, auth, isDark) : _buildGuest(context),
+    );
+  }
+
+  Widget _buildProfile(BuildContext context, AuthProvider auth, bool isDark) {
+    final user = auth.user!;
+    final initial = (user.displayName ?? user.username)[0].toUpperCase();
+
+    return RefreshIndicator(
+      onRefresh: () async => await auth.initialize(),
+      child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          if (auth.isAuthenticated) ...[
-            // User info
-            GestureDetector(
-              onTap: () => _showEditProfile(context, auth),
-              child: Stack(
-                children: [
-                  CircleAvatar(
-                    radius: 40,
-                    backgroundColor: AppTheme.primary.withValues(alpha: 0.2),
-                    child: Text(
-                      (auth.user!.displayName ?? auth.user!.username)[0].toUpperCase(),
-                      style: const TextStyle(fontSize: 36, color: AppTheme.primary, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  Positioned(
-                    bottom: 0, right: 0,
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: AppTheme.primary,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: isDark ? const Color(0xFF0a0a0a) : Colors.white, width: 2),
+          // Profile Header
+          const SizedBox(height: 16),
+          GestureDetector(
+            onTap: () => _editProfile(context, auth),
+            child: Stack(
+              alignment: Alignment.bottomRight,
+              children: [
+                CircleAvatar(
+                  radius: 56,
+                  backgroundColor: Colors.transparent,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: SweepGradient(
+                        colors: [
+                          AppTheme.primary,
+                          AppTheme.primary.withValues(alpha: 0.3),
+                          Colors.transparent,
+                          AppTheme.primary.withValues(alpha: 0.3),
+                          AppTheme.primary,
+                        ],
                       ),
-                      child: const Icon(Icons.edit, size: 14, color: Colors.black),
+                    ),
+                    padding: const EdgeInsets.all(3),
+                    child: CircleAvatar(
+                      radius: 53,
+                      backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF5F5F5),
+                      child: CircleAvatar(
+                        radius: 48,
+                        backgroundColor: AppTheme.primary.withValues(alpha: 0.15),
+                        child: Text(
+                          initial,
+                          style: const TextStyle(
+                            fontSize: 40,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.primary,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
-                ],
-              ),
+                ),
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primary,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: isDark ? const Color(0xFF121212) : const Color(0xFFF5F5F5), width: 3),
+                  ),
+                  child: const Icon(Icons.edit, size: 18, color: Colors.black),
+                ),
+              ],
             ),
-            const SizedBox(height: 12),
-            GestureDetector(
-              onTap: () => _showEditProfile(context, auth),
-              child: Column(
-                children: [
-                  Text(auth.user!.displayName ?? auth.user!.username,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                  Text(auth.user!.email, textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 14, color: Colors.grey[400])),
-                  if (auth.user!.bio != null) ...[
-                    const SizedBox(height: 8),
-                    Text(auth.user!.bio!, textAlign: TextAlign.center, style: TextStyle(color: Colors.grey[500])),
-                  ],
-                ],
-              ),
-            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            user.displayName ?? user.username,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            user.email,
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 14, color: Colors.grey[400]),
+          ),
+          if (user.bio != null && user.bio!.isNotEmpty) ...[
             const SizedBox(height: 8),
-
-            _MenuItem(icon: Icons.edit_outlined, title: 'Edit Profile', onTap: () => _showEditProfile(context, auth)),
-            _MenuItem(icon: Icons.download_outlined, title: 'My Downloads', onTap: () {}),
-            const Divider(),
-            _MenuItem(icon: Icons.logout, title: 'Sign Out', color: Colors.redAccent, onTap: () {
-              auth.logout();
-              Navigator.pop(context);
-            }),
-          ] else ...[
-            // Not logged in
-            const Center(
-              child: Column(
-                children: [
-                  Icon(Icons.person_outline, size: 80, color: Colors.white24),
-                  SizedBox(height: 16),
-                  Text('Sign in to see your profile', style: TextStyle(color: Colors.white54)),
-                  SizedBox(height: 24),
-                ],
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 32),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(8),
               ),
-            ),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AuthScreen())),
-                child: const Text('Sign In'),
+              child: Text(
+                user.bio!,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.grey[400],
+                  fontStyle: FontStyle.italic,
+                ),
               ),
             ),
           ],
+
           const SizedBox(height: 24),
-          const Divider(),
-          const SizedBox(height: 16),
-          // Playback Settings
-          _SectionHeader(title: 'Playback'),
-          SwitchListTile(
-            title: const Text('Crossfade'),
-            subtitle: const Text('Smooth transitions between songs', style: TextStyle(fontSize: 12, color: Colors.white38)),
-            value: settings.crossfadeEnabled,
-            onChanged: (_) => settings.toggleCrossfade(),
-            activeColor: AppTheme.primary,
+
+          // Stats Row
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: isDark ? Colors.white10 : Colors.black12),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _StatItem(icon: Icons.favorite, label: 'Favorit', value: '0'),
+                Container(width: 1, height: 32, color: isDark ? Colors.white10 : Colors.black12),
+                _StatItem(icon: Icons.queue_music, label: 'Playlist', value: '0'),
+                Container(width: 1, height: 32, color: isDark ? Colors.white10 : Colors.black12),
+                _StatItem(icon: Icons.download, label: 'Unduhan', value: '0'),
+              ],
+            ),
           ),
-          SwitchListTile(
-            title: const Text('Gapless Playback'),
-            subtitle: const Text('No silence between consecutive tracks', style: TextStyle(fontSize: 12, color: Colors.white38)),
-            value: settings.gaplessPlayback,
-            onChanged: (_) => settings.toggleGaplessPlayback(),
-            activeColor: AppTheme.primary,
+
+          const SizedBox(height: 24),
+
+          // Menu Items
+          _MenuButton(
+            icon: Icons.person_edit_outlined,
+            title: 'Edit Profil',
+            subtitle: 'Ubah nama tampilan dan bio',
+            onTap: () => _editProfile(context, auth),
           ),
-          // Streaming Quality
-          ListTile(
-            leading: const Icon(Icons.wifi, color: Colors.white54),
-            title: const Text('Streaming Quality'),
-            subtitle: Text(settings.streamingQualityLabel, style: TextStyle(fontSize: 12, color: Colors.grey[500])),
-            onTap: () => _showQualityPicker(context, settings, 'streaming'),
+          _MenuButton(
+            icon: Icons.settings_outlined,
+            title: 'Pengaturan',
+            subtitle: 'Kualitas audio, tampilan, dan lainnya',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const SettingsScreen()),
+            ),
           ),
-          // Download Quality
-          ListTile(
-            leading: const Icon(Icons.download, color: Colors.white54),
-            title: const Text('Download Quality'),
-            subtitle: Text(settings.audioQualityLabel, style: TextStyle(fontSize: 12, color: Colors.grey[500])),
-            onTap: () => _showQualityPicker(context, settings, 'download'),
+          _MenuButton(
+            icon: Icons.info_outline,
+            title: 'Tentang Musika',
+            subtitle: 'Versi ${AppTheme.appVersion}',
+            onTap: () => _showAbout(context),
           ),
-          SwitchListTile(
-            title: const Text('Download on Wi-Fi Only'),
-            subtitle: const Text('Save mobile data', style: TextStyle(fontSize: 12, color: Colors.white38)),
-            value: settings.downloadOnWifiOnly,
-            onChanged: (_) => settings.toggleDownloadOnWifi(),
-            activeColor: AppTheme.primary,
-          ),
-          const SizedBox(height: 8),
-          const Divider(),
-          const SizedBox(height: 16),
-          // Display Settings
-          _SectionHeader(title: 'Display'),
-          SwitchListTile(
-            title: const Text('Dark Mode'),
-            subtitle: Text(isDark ? 'Dark theme active' : 'Light theme active', style: TextStyle(fontSize: 12, color: Colors.grey[500])),
-            value: isDark,
-            onChanged: (_) => settings.toggleTheme(),
-            activeColor: AppTheme.primary,
-          ),
-          SwitchListTile(
-            title: const Text('Show Lyrics'),
-            subtitle: const Text('Display synced lyrics when available', style: TextStyle(fontSize: 12, color: Colors.white38)),
-            value: settings.showLyrics,
-            onChanged: (_) => settings.toggleShowLyrics(),
-            activeColor: AppTheme.primary,
-          ),
-          ListTile(
-            leading: const Icon(Icons.language, color: Colors.white54),
-            title: const Text('Language'),
-            subtitle: Text(_langLabel(settings.language), style: TextStyle(fontSize: 12, color: Colors.grey[500])),
-            onTap: () => _showLanguagePicker(context, settings),
-          ),
-          // Cache
-          ListTile(
-            leading: const Icon(Icons.storage, color: Colors.white54),
-            title: const Text('Cache Size'),
-            subtitle: Text('${settings.maxCacheSize} MB', style: TextStyle(fontSize: 12, color: Colors.grey[500])),
-            onTap: () => _showCachePicker(context, settings),
-          ),
-          const SizedBox(height: 8),
-          const Divider(),
-          const SizedBox(height: 16),
-          // About
-          _SectionHeader(title: 'About'),
-          ListTile(
-            leading: const Icon(Icons.info_outline, color: Colors.white54),
-            title: const Text('Musika'),
-            subtitle: Text('Version 1.0.1', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-            trailing: const Icon(Icons.open_in_new, size: 16, color: Colors.white38),
-            onTap: () {},
+
+          const SizedBox(height: 24),
+
+          // Logout Button
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => _confirmLogout(context, auth),
+              icon: const Icon(Icons.logout, size: 18, color: Colors.redAccent),
+              label: const Text('Keluar', style: TextStyle(color: Colors.redAccent, fontSize: 15)),
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: Colors.redAccent.withValues(alpha: 0.5)),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
           ),
           const SizedBox(height: 32),
         ],
@@ -184,187 +202,269 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  String _langLabel(String lang) {
-    switch (lang) {
-      case 'id': return 'Bahasa Indonesia';
-      case 'en': return 'English';
-      default: return 'Bahasa Indonesia';
-    }
-  }
-
-  void _showQualityPicker(BuildContext context, SettingsProvider settings, String type) {
-    final options = type == 'streaming'
-        ? ['low', 'medium', 'high']
-        : ['low', 'medium', 'high', 'auto'];
-    final labels = options.map((o) {
-      switch (o) {
-        case 'low': return 'Low';
-        case 'medium': return 'Medium';
-        case 'high': return 'High';
-        case 'auto': return 'Auto';
-        default: return o;
-      }
-    }).toList();
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1e1e1e) : Colors.white,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
-      builder: (_) => SafeArea(
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Text(type == 'streaming' ? 'Streaming Quality' : 'Download Quality', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          ),
-          const Divider(height: 1),
-          ...List.generate(options.length, (i) {
-            final current = type == 'streaming' ? settings.streamingQuality : settings.audioQuality;
-            return ListTile(
-              title: Text(labels[i]),
-              trailing: options[i] == current ? const Icon(Icons.check, color: AppTheme.primary) : null,
-              onTap: () {
-                if (type == 'streaming') {
-                  settings.setStreamingQuality(options[i]);
-                } else {
-                  settings.setAudioQuality(options[i]);
-                }
-                Navigator.pop(context);
-              },
-            );
-          }),
-          const SizedBox(height: 16),
-        ]),
+  Widget _buildGuest(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 88, height: 88,
+              decoration: BoxDecoration(
+                color: AppTheme.primary.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.person_outline, size: 44, color: AppTheme.primary),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'Masuk untuk Fitur Lengkap',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Sinkron playlist, favorit, dan riwayat di semua perangkat',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 14, color: Colors.grey[400]),
+            ),
+            const SizedBox(height: 32),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AuthScreen()),
+                ),
+                icon: const Icon(Icons.login, size: 20),
+                label: const Text('Masuk / Daftar'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextButton(
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SettingsScreen()),
+              ),
+              child: const Text('Jelajahi Pengaturan'),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  void _showLanguagePicker(BuildContext context, SettingsProvider settings) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1e1e1e) : Colors.white,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
-      builder: (_) => SafeArea(
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          const Padding(
-            padding: EdgeInsets.all(16),
-            child: Text('Language', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          ),
-          const Divider(height: 1),
-          ListTile(
-            title: const Text('Bahasa Indonesia'),
-            trailing: settings.language == 'id' ? const Icon(Icons.check, color: AppTheme.primary) : null,
-            onTap: () { settings.setLanguage('id'); Navigator.pop(context); },
-          ),
-          ListTile(
-            title: const Text('English'),
-            trailing: settings.language == 'en' ? const Icon(Icons.check, color: AppTheme.primary) : null,
-            onTap: () { settings.setLanguage('en'); Navigator.pop(context); },
-          ),
-          const SizedBox(height: 16),
-        ]),
-      ),
-    );
-  }
-
-  void _showCachePicker(BuildContext context, SettingsProvider settings) {
-    final sizes = [128, 256, 512, 1024];
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1e1e1e) : Colors.white,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
-      builder: (_) => SafeArea(
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          const Padding(
-            padding: EdgeInsets.all(16),
-            child: Text('Cache Size', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          ),
-          const Divider(height: 1),
-          ...sizes.map((s) => ListTile(
-            title: Text('$s MB'),
-            trailing: settings.maxCacheSize == s ? const Icon(Icons.check, color: AppTheme.primary) : null,
-            onTap: () { settings.setMaxCacheSize(s); Navigator.pop(context); },
-          )),
-          const SizedBox(height: 16),
-        ]),
-      ),
-    );
-  }
-
-  void _showEditProfile(BuildContext context, AuthProvider auth) {
+  void _editProfile(BuildContext context, AuthProvider auth) {
     final nameCtrl = TextEditingController(text: auth.user!.displayName ?? '');
     final bioCtrl = TextEditingController(text: auth.user!.bio ?? '');
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    bool saving = false;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1e1e1e) : Colors.white,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
-      builder: (_) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-          left: 16, right: 16, top: 16,
+      backgroundColor: isDark ? const Color(0xFF1e1e1e) : Colors.white,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) => Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(ctx).viewInsets.bottom,
+            left: 20, right: 20, top: 20,
+          ),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Container(
+              width: 40, height: 4,
+              decoration: BoxDecoration(
+                color: isDark ? Colors.white24 : Colors.black26,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text('Edit Profil', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 24),
+            TextField(
+              controller: nameCtrl,
+              decoration: InputDecoration(
+                labelText: 'Nama Tampilan',
+                prefixIcon: const Icon(Icons.person_outline),
+                filled: true,
+                fillColor: isDark ? const Color(0xFF282828) : const Color(0xFFF0F0F0),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: bioCtrl,
+              maxLines: 3,
+              decoration: InputDecoration(
+                labelText: 'Bio',
+                prefixIcon: const Padding(
+                  padding: EdgeInsets.only(bottom: 48),
+                  child: Icon(Icons.description_outlined),
+                ),
+                filled: true,
+                fillColor: isDark ? const Color(0xFF282828) : const Color(0xFFF0F0F0),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: saving
+                    ? null
+                    : () async {
+                        setSheetState(() => saving = true);
+                        await auth.updateProfile({
+                          'username': nameCtrl.text.trim(),
+                          'bio': bioCtrl.text.trim(),
+                        });
+                        setSheetState(() => saving = false);
+                        Navigator.pop(ctx);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Profil berhasil diperbarui!'),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        }
+                      },
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+                child: saving
+                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
+                    : const Text('Simpan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+              ),
+            ),
+            const SizedBox(height: 32),
+          ]),
         ),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          const Text('Edit Profile', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 16),
-          TextField(
-            controller: nameCtrl,
-            decoration: const InputDecoration(
-              labelText: 'Display Name',
-              border: OutlineInputBorder(),
-              filled: true,
-            ),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: bioCtrl,
-            maxLines: 3,
-            decoration: const InputDecoration(
-              labelText: 'Bio',
-              border: OutlineInputBorder(),
-              filled: true,
-            ),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Save'),
-            ),
-          ),
-          const SizedBox(height: 24),
-        ]),
       ),
     );
   }
-}
 
-class _SectionHeader extends StatelessWidget {
-  final String title;
-  const _SectionHeader({required this.title});
+  void _confirmLogout(BuildContext context, AuthProvider auth) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1e1e1e) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(Icons.logout, color: Colors.redAccent, size: 24),
+            const SizedBox(width: 8),
+            const Text('Keluar'),
+          ],
+        ),
+        content: const Text('Kamu akan keluar dari akun. Data offline tetap tersimpan.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Batal')),
+          ElevatedButton(
+            onPressed: () {
+              auth.logout();
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Keluar'),
+          ),
+        ],
+      ),
+    );
+  }
 
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Text(title, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.grey[400])),
+  void _showAbout(BuildContext context) {
+    showAboutDialog(
+      context: context,
+      applicationName: 'Musika',
+      applicationVersion: AppTheme.appVersion,
+      applicationIcon: Container(
+        width: 48, height: 48,
+        decoration: BoxDecoration(
+          color: AppTheme.primary,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Icon(Icons.music_note, color: Colors.black, size: 28),
+      ),
+      children: [
+        const Text('Aplikasi pemutar musik multi-platform. Streaming dari YouTube, Spotify, Apple Music, dan SoundCloud.'),
+      ],
     );
   }
 }
 
-class _MenuItem extends StatelessWidget {
+class _StatItem extends StatelessWidget {
   final IconData icon;
-  final String title;
-  final Color? color;
-  final VoidCallback onTap;
+  final String label;
+  final String value;
 
-  const _MenuItem({required this.icon, required this.title, this.color, required this.onTap});
+  const _StatItem({required this.icon, required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      leading: Icon(icon, color: color ?? Colors.white54),
-      title: Text(title, style: TextStyle(color: color ?? Colors.white)),
-      onTap: onTap,
+    return Column(
+      children: [
+        Icon(icon, color: AppTheme.primary, size: 24),
+        const SizedBox(height: 8),
+        Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+        Text(label, style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+      ],
+    );
+  }
+}
+
+class _MenuButton extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _MenuButton({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: isDark ? Colors.white10 : Colors.black12),
+      ),
+      child: ListTile(
+        leading: Container(
+          width: 40, height: 40,
+          decoration: BoxDecoration(
+            color: AppTheme.primary.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, color: AppTheme.primary, size: 22),
+        ),
+        title: Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
+        subtitle: Text(subtitle, style: TextStyle(fontSize: 12, color: Colors.grey[500])),
+        trailing: const Icon(Icons.chevron_right, color: Colors.white24, size: 20),
+        onTap: onTap,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      ),
     );
   }
 }
