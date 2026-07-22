@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/settings_provider.dart';
 import '../config/theme.dart';
 import 'profile_screen.dart';
+import 'terms_screen.dart';
+import 'privacy_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -209,7 +212,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 icon: Icons.code,
                 title: 'Teknologi',
                 subtitle: 'Flutter + Bun + NeonDB',
-                onTap: () {},
+                onTap: () => _showTechInfo(context),
               ),
               _DividerLine(),
               _SettingTile(
@@ -241,6 +244,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
             ),
+
+          const SizedBox(height: 16),
+
+          // ===== Legal & Info Section =====
+          _SectionHeader(title: 'Legal & Info'),
+          _SettingsCard(context: context, children: [
+            _SettingTile(
+              icon: Icons.description_outlined,
+              title: 'Syarat & Ketentuan',
+              subtitle: 'Ketentuan penggunaan aplikasi',
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TermsScreen())),
+            ),
+            _DividerLine(),
+            _SettingTile(
+              icon: Icons.privacy_tip_outlined,
+              title: 'Kebijakan Privasi',
+              subtitle: 'Bagaimana kami melindungi data Anda',
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PrivacyScreen())),
+            ),
+          ]),
 
           const SizedBox(height: 24),
         ],
@@ -389,12 +412,71 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _shareApp(BuildContext context) {
+    Clipboard.setData(const ClipboardData(
+      text: 'https://github.com/akaanakbaik/musika-apk',
+    ));
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Link dibagikan!'),
+        content: Text('Link repo GitHub disalin ke clipboard!'),
         behavior: SnackBarBehavior.floating,
         duration: Duration(seconds: 2),
       ),
+    );
+  }
+
+  void _showTechInfo(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFF1e1e1e) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(Icons.code, color: AppTheme.primary, size: 24),
+            const SizedBox(width: 8),
+            const Text('Teknologi', style: TextStyle(fontSize: 18)),
+          ],
+        ),
+        content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          _techRow('Frontend', 'Flutter 3.7 • Dart'),
+          const SizedBox(height: 8),
+          _techRow('Backend', 'Bun • Express • TypeScript'),
+          const SizedBox(height: 8),
+          _techRow('Database', 'PostgreSQL (NeonDB)'),
+          const SizedBox(height: 8),
+          _techRow('Email', 'Resend • Nodemailer'),
+          const SizedBox(height: 8),
+          _techRow('CDN', 'cdn.izukaprivate.my.id'),
+          const SizedBox(height: 8),
+          _techRow('API', '11 REST endpoints • 4 API providers'),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppTheme.primary.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Text('Dibangun dengan ❤️ untuk pecinta musik',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ]),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Tutup')),
+        ],
+      ),
+    );
+  }
+
+  Widget _techRow(String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: TextStyle(fontSize: 13, color: Colors.grey[400])),
+        Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+      ],
     );
   }
 
@@ -566,3 +648,5 @@ class _AboutTile extends StatelessWidget {
     );
   }
 }
+
+

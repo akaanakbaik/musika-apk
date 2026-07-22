@@ -1,6 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../providers/auth_provider.dart';
+import '../services/cdn_service.dart';
 import '../config/theme.dart';
 import 'auth_screen.dart';
 import 'settings_screen.dart';
@@ -49,7 +53,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           // Profile Header
           const SizedBox(height: 16),
           GestureDetector(
-            onTap: () => _editProfile(context, auth),
+            onTap: () => _changeAvatar(context, auth),
             child: Stack(
               alignment: Alignment.bottomRight,
               children: [
@@ -76,14 +80,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       child: CircleAvatar(
                         radius: 48,
                         backgroundColor: AppTheme.primary.withValues(alpha: 0.15),
-                        child: Text(
-                          initial,
-                          style: const TextStyle(
-                            fontSize: 40,
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.primary,
-                          ),
-                        ),
+                        backgroundImage: user.avatarUrl != null && user.avatarUrl!.isNotEmpty && user.avatarUrl!.startsWith('http')
+                            ? NetworkImage(user.avatarUrl!) as ImageProvider
+                            : null,
+                        child: user.avatarUrl == null || user.avatarUrl!.isEmpty || !user.avatarUrl!.startsWith('http')
+                            ? Text(initial, style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: AppTheme.primary))
+                            : null,
                       ),
                     ),
                   ),
@@ -95,7 +97,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     shape: BoxShape.circle,
                     border: Border.all(color: isDark ? const Color(0xFF121212) : const Color(0xFFF5F5F5), width: 3),
                   ),
-                  child: const Icon(Icons.edit, size: 18, color: Colors.black),
+                  child: const Icon(Icons.camera_alt, size: 16, color: Colors.black),
                 ),
               ],
             ),
@@ -255,6 +257,68 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _changeAvatar(BuildContext context, AuthProvider auth) async {
+    try {
+      var status = await Permission.photos.request();
+      if (!status.isGranted) {
+        status = await Permission.storage.request();
+      }
+      if (!status.isGranted) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Izin akses galeri diperlukan'), behavior: SnackBarBehavior.floating),
+          );
+        }
+        return;
+      }
+
+      final picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 512,
+        maxHeight: 512,
+        imageQuality: 80,
+      );
+
+      if (image == null || !context.mounted) return;
+
+      showDialog(context: context, barrierDismissible: false,
+        builder: (_) => const Center(child: CircularProgressIndicator()),
+      );
+
+      try {
+        final file = File(image.path);
+        final cdn = CdnService();
+        final cdnUrl = await cdn.uploadImage(file, prefix: 'avatar_${auth.user!.id}');
+
+        if (context.mounted) Navigator.pop(context);
+
+        await auth.updateProfile({'avatar_url': cdnUrl});
+
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Foto profil berhasil diperbarui!'), behavior: SnackBarBehavior.floating),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) Navigator.pop(context);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Gagal upload: ${e.toString().length > 60 ? e.toString().substring(0, 60) : e.toString()}'),
+                behavior: SnackBarBehavior.floating),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${e.toString().length > 60 ? e.toString().substring(0, 60) : e.toString()}'),
+              behavior: SnackBarBehavior.floating),
+        );
+      }
+    }
   }
 
   void _editProfile(BuildContext context, AuthProvider auth) {
